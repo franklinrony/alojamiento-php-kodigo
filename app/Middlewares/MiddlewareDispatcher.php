@@ -37,6 +37,24 @@ class MiddlewareDispatcher
         $this->middlewares[] = $middleware;
         return $this;
     }
+    
+    /**
+     * Ejecuta la cadena de middlewares
+     */
+    public function dispatch(): void
+    {
+        $handler = $this->handler;
+        
+        // Construir la cadena de middlewares en orden inverso
+        foreach (array_reverse($this->middlewares) as $middleware) {
+            $handler = function() use ($middleware, $handler) {
+                $middleware->handle($handler);
+            };
+        }
+        
+        // Ejecutar el primer middleware de la cadena
+        $handler();
+    }
 
     /**
      * Ejecuta la cadena de middlewares
