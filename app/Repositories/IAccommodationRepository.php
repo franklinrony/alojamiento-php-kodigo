@@ -6,7 +6,7 @@ namespace App\Repositories;
  * Interface IAccommodationRepository
  * Interfaz para el repositorio de alojamientos
  */
-interface IAccommodationRepository extends RepositoryInterface
+interface IAccommodationRepository extends IRepository
 {
     /**
      * Busca alojamientos por rango de precio

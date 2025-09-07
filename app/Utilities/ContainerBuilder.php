@@ -26,6 +26,10 @@ use App\Services\IUserService;
 use App\Services\IRoleService;
 use App\Services\IPermissionService;
 use App\Services\IAccommodationService;
+use App\Repositories\IUserRepository;
+use App\Repositories\IRoleRepository;
+use App\Repositories\IPermissionRepository;
+use App\Repositories\IAccommodationRepository;
 
 class ContainerBuilder
 {
@@ -131,11 +135,11 @@ class ContainerBuilder
         $container->addShared(Permission::class);
 
         // Repositorios de autenticación
-        $container->add(UserRepository::class)
+        $container->add(IUserRepository::class, UserRepository::class)
             ->addArgument(User::class);
-        $container->add(RoleRepository::class)
+        $container->add(IRoleRepository::class, RoleRepository::class)
             ->addArgument(Role::class);
-        $container->add(PermissionRepository::class)
+        $container->add(IPermissionRepository::class, PermissionRepository::class)
             ->addArgument(Permission::class);
 
         // Servicios de autenticación
@@ -154,7 +158,7 @@ class ContainerBuilder
         $container->addShared(Accommodation::class);
 
         // Repositorio de alojamiento
-        $container->add(AccommodationRepository::class)
+        $container->add(IAccommodationRepository::class, AccommodationRepository::class)
             ->addArgument(Accommodation::class);
 
         // Servicio de alojamiento

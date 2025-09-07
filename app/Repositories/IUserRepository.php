@@ -8,7 +8,7 @@ use App\Models\User;
  * Interface IUserRepository
  * Interfaz para el repositorio de usuarios
  */
-interface IUserRepository extends RepositoryInterface
+interface IUserRepository extends IRepository
 {
     /**
      * Encuentra un usuario por su email
