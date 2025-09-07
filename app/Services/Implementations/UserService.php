@@ -42,13 +42,31 @@ class UserService implements IUserService
             throw new \RuntimeException('El email ya está registrado');
         }
 
+        // Filtrar solo los campos permitidos
+        $filteredData = array_intersect_key($userData, array_flip([
+            'email',
+            'password',
+            'name',
+            'role_id'
+        ]));
+
         // Asegurarse de que el usuario esté activo por defecto
-        $userData['active'] = true;
+        $filteredData['active'] = true;
+        
+        // Establecer rol por defecto si no se proporciona
+        if (!isset($filteredData['role_id'])) {
+            $filteredData['role_id'] = 2; // ID del rol 'user'
+        }
         
         // Hash de la contraseña
-        $userData['password'] = password_hash($userData['password'], PASSWORD_DEFAULT);
+        $filteredData['password'] = password_hash($filteredData['password'], PASSWORD_DEFAULT);
 
-        return $this->userRepository->create($userData);
+        // Agregar timestamps
+        $now = date('Y-m-d H:i:s');
+        $filteredData['created_at'] = $now;
+        $filteredData['updated_at'] = $now;
+
+        return $this->userRepository->create($filteredData);
     }
 
     /**

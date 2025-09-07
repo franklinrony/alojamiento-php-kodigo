@@ -4,9 +4,9 @@ use FastRoute\RouteCollector;
 
 return function (RouteCollector $r) {
     // Rutas de autenticación
-    $r->post('/api/auth/register', ['App\Controllers\AuthController', 'register']);
-    $r->post('/api/auth/login', ['App\Controllers\AuthController', 'login']);
-    $r->post('/api/auth/logout', ['App\Controllers\AuthController', 'logout', 'middleware' => ['auth']]);
+    $r->post('/api/auth/register', ['App\Controllers\Api\AuthController', 'register']);
+    $r->post('/api/auth/login', ['App\Controllers\Api\AuthController', 'login']);
+    $r->post('/api/auth/logout', ['App\Controllers\Api\AuthController', 'logout', 'middleware' => ['auth']]);
 
     // Rutas de usuario
     $r->get('/api/user/profile', ['App\Controllers\UserController', 'profile', 'middleware' => ['auth']]);

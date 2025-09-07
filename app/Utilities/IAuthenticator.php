@@ -25,6 +25,13 @@ interface IAuthenticator
     public function getUserId(): ?int;
 
     /**
+     * Obtiene el usuario autenticado
+     * 
+     * @return \App\Models\User|null
+     */
+    public function getUser(): ?\App\Models\User;
+
+    /**
      * Cierra la sesión del usuario
      */
     public function logout(): void;

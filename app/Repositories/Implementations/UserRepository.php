@@ -50,12 +50,11 @@ class UserRepository extends BaseRepository implements IUserRepository
     /**
      * @inheritDoc
      */
-    public function emailExists(string $email)
+    public function emailExists(string $email): bool
     {
-        $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM users WHERE email = :email");
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM users WHERE email = :email");
         $stmt->execute(['email' => $email]);
         
-        $result = $stmt->fetch();
-        return $result['count'] > 0;
+        return (int) $stmt->fetchColumn() > 0;
     }
 }

@@ -169,12 +169,16 @@ abstract class BaseRepository implements IRepository
         $modelClass = get_class($this->model);
         $model = new $modelClass();
 
-        foreach ($data as $key => $value) {
-            $setter = $this->getSetterMethod($key);
-            if (method_exists($model, $setter)) {
-                $model->$setter($value);
-            }
+        // Asignar el ID primero si existe
+        if (isset($data['id'])) {
+            $model->setId($data['id']);
         }
+
+        // Usar el método fill para asignar las propiedades
+        $model->fill($data);
+
+        // Log para depuración
+        error_log("Mapeando modelo: " . print_r($data, true));
 
         return $model;
     }

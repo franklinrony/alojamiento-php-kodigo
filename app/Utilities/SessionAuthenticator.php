@@ -140,4 +140,26 @@ class SessionAuthenticator implements IAuthenticator
             return null;
         }
     }
+
+    /**
+     * @inheritDoc
+     */
+    public function getUser(): ?User
+    {
+        if (!$this->isAuthenticated()) {
+            return null;
+        }
+
+        try {
+            $user = $this->userService->getUser($_SESSION['user_id']);
+            if (!$user || !$user->isActive()) {
+                $this->logout();
+                return null;
+            }
+            return $user;
+        } catch (\Exception $e) {
+            $this->logout();
+            return null;
+        }
+    }
 }

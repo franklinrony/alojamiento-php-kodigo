@@ -27,4 +27,36 @@ class PathHelper
     {
         return self::projectRoot() . DIRECTORY_SEPARATOR . ltrim($relativePath, DIRECTORY_SEPARATOR);
     }
+
+    /**
+     * Devuelve la ruta absoluta al directorio de vistas
+     */
+    public static function getViewsPath(): string
+    {
+        return self::fromRoot('app/Views');
+    }
+
+    /**
+     * Devuelve la ruta absoluta al directorio de caché
+     */
+    public static function getCachePath(): string
+    {
+        return self::fromRoot('var/cache');
+    }
+
+    /**
+     * Devuelve la ruta absoluta al directorio de logs
+     */
+    public static function getLogsPath(): string
+    {
+        return self::fromRoot('var/logs');
+    }
+
+    /**
+     * Devuelve la ruta absoluta al directorio de configuración
+     */
+    public static function getConfigPath(): string
+    {
+        return self::fromRoot('config');
+    }
 }

@@ -37,10 +37,15 @@ class Router
      */
     private function initializeDispatcher(): void
     {
-        $routesFile = PathHelper::fromRoot('config/routes/api.php');
-        $routeDefinitionCallback = require $routesFile;
-
-        $this->dispatcher = simpleDispatcher($routeDefinitionCallback);
+        $this->dispatcher = simpleDispatcher(function(RouteCollector $r) {
+            // Cargar rutas web
+            $webRoutes = require PathHelper::fromRoot('config/routes/web.php');
+            $webRoutes($r);
+            
+            // Cargar rutas API
+            $apiRoutes = require PathHelper::fromRoot('config/routes/api.php');
+            $apiRoutes($r);
+        });
     }
 
     /**
@@ -48,9 +53,17 @@ class Router
      */
     public function dispatch(): void
     {
+        static $dispatchCount = 0;
+        $dispatchCount++;
+        
+        // Log para debug
+        error_log("Dispatch llamado {$dispatchCount} veces");
+        
         // Obtener método y URI de la petición actual
         $httpMethod = $_SERVER['REQUEST_METHOD'];
         $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        
+        error_log("Procesando ruta: {$uri} con método {$httpMethod}");
         
         // Obtener información de la ruta
         $routeInfo = $this->dispatcher->dispatch($httpMethod, $uri);

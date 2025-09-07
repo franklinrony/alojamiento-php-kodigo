@@ -73,9 +73,25 @@ class User extends Model
     /**
      * @param string $password
      */
+    /**
+     * Establece el hash de la contraseña directamente
+     * @param string $hash
+     */
+    private function setPasswordHash(string $hash): void
+    {
+        $this->password = $hash;
+    }
+
     public function setPassword(string $password): void
     {
-        $this->password = password_hash($password, PASSWORD_DEFAULT);
+        // Si el password ya parece ser un hash, asignarlo directamente
+        if (strlen($password) === 60 && strpos($password, '$2y$') === 0) {
+            $this->setPasswordHash($password);
+        } else {
+            $this->setPasswordHash(password_hash($password, PASSWORD_DEFAULT));
+        }
+        
+        error_log("Password establecido: " . substr($this->password, 0, 10) . "...");
     }
 
     /**
@@ -86,7 +102,16 @@ class User extends Model
      */
     public function verifyPassword(string $password): bool
     {
-        return password_verify($password, $this->password);
+        if (empty($this->password)) {
+            error_log("Error: Hash de contraseña vacío para el usuario " . $this->email);
+            return false;
+        }
+
+        $result = password_verify($password, $this->password);
+        if (!$result) {
+            error_log("Verificación de contraseña fallida para el usuario " . $this->email);
+        }
+        return $result;
     }
 
     /**

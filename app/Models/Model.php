@@ -36,7 +36,18 @@ abstract class Model
      */
     public function getId(): int
     {
-        return $this->id;
+        return (int) $this->id;
+    }
+
+    /**
+     * Establece el ID del registro
+     *
+     * @param int $id
+     * @return void
+     */
+    public function setId($id): void
+    {
+        $this->id = (int) $id;
     }
 
     /**
@@ -44,19 +55,39 @@ abstract class Model
      *
      * @return string
      */
-    public function getCreatedAt(): string
+    public function getCreatedAt(): ?string
     {
         return $this->created_at;
     }
 
     /**
+     * Establece la fecha de creación
+     *
+     * @param string|null $createdAt
+     */
+    public function setCreatedAt(?string $createdAt): void
+    {
+        $this->created_at = $createdAt;
+    }
+
+    /**
      * Obtiene la fecha de actualización
      *
-     * @return string
+     * @return string|null
      */
-    public function getUpdatedAt(): string
+    public function getUpdatedAt(): ?string
     {
         return $this->updated_at;
+    }
+
+    /**
+     * Establece la fecha de actualización
+     *
+     * @param string|null $updatedAt
+     */
+    public function setUpdatedAt(?string $updatedAt): void
+    {
+        $this->updated_at = $updatedAt;
     }
 
     /**
@@ -68,6 +99,19 @@ abstract class Model
     public function fill(array $data): void
     {
         foreach ($data as $key => $value) {
+            // Evitar sobreescribir el ID si ya está establecido
+            if ($key === 'id' && $this->id !== null) {
+                continue;
+            }
+
+            // Intentar usar el setter si existe
+            $setter = 'set' . str_replace('_', '', ucwords($key, '_'));
+            if (method_exists($this, $setter)) {
+                $this->$setter($value);
+                continue;
+            }
+
+            // Si no hay setter pero la propiedad existe, asignarla directamente
             if (property_exists($this, $key)) {
                 $this->$key = $value;
             }

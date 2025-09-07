@@ -20,6 +20,53 @@ abstract class BaseController implements IController
      * @var IRequestValidator|null
      */
     protected ?IRequestValidator $validator = null;
+
+    /**
+     * @var \Twig\Environment
+     */
+    protected \Twig\Environment $twig;
+
+    /**
+     * Constructor base que configura Twig y otros servicios comunes
+     *
+     * @param \Twig\Environment $twig
+     * @param IRequestValidator|null $validator
+     * @param IAuthenticator|null $authenticator
+     */
+    public function __construct(
+        \Twig\Environment $twig,
+        ?IRequestValidator $validator = null,
+        ?IAuthenticator $authenticator = null
+    ) {
+        $this->twig = $twig;
+        $this->validator = $validator;
+        $this->authenticator = $authenticator;
+        
+        // Configurar variables globales para todas las vistas
+        $this->twig->addGlobal('app_name', $_ENV['APP_NAME'] ?? 'Alojamientos Kodigo');
+        $this->twig->addGlobal('app_env', $_ENV['APP_ENV'] ?? 'dev');
+        $this->twig->addGlobal('is_debug', $_ENV['APP_DEBUG'] ?? false);
+        
+        $isAuthenticated = $this->authenticator ? $this->authenticator->isAuthenticated() : false;
+        $user = $this->authenticator ? $this->authenticator->getUser() : null;
+        
+        // Debug info
+        error_log('Auth Status: ' . ($isAuthenticated ? 'true' : 'false'));
+        error_log('Session Status: ' . session_status());
+        error_log('Session ID: ' . session_id());
+        error_log('User in Session: ' . (isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 'none'));
+        
+        $this->twig->addGlobal('auth', [
+            'isAuthenticated' => $isAuthenticated,
+            'user' => $user
+        ]);
+        
+        // Configurar variable flash messages si existen en la sesión
+        $flash = $_SESSION['flash_messages'] ?? [];
+        unset($_SESSION['flash_messages']);
+        $this->twig->addGlobal('flash', $flash);
+    }
+
     /**
      * @inheritDoc
      */
@@ -31,14 +78,24 @@ abstract class BaseController implements IController
     }
 
     /**
-     * Obtiene el contenido JSON del cuerpo de la petición
+     * Obtiene el contenido JSON del cuerpo de la petición y lo valida
      *
+     * @param array $rules Reglas de validación
      * @return array
+     * @throws \RuntimeException Si los datos no son válidos
      */
-    protected function getJsonRequest(): array
+    protected function getJsonRequest(array $rules = []): array
     {
         $json = file_get_contents('php://input');
-        return json_decode($json, true) ?? [];
+        $data = json_decode($json, true) ?? [];
+
+        if (!empty($rules) && $this->validator) {
+            if (!$this->validator->validate($data, $rules)) {
+                throw new \RuntimeException($this->validator->getErrors()[0]);
+            }
+        }
+
+        return $data;
     }
 
     /**
@@ -63,7 +120,6 @@ abstract class BaseController implements IController
         return $_SERVER['REQUEST_METHOD'] === strtoupper($method);
     }
 
-    
     /**
      * Obtiene un parámetro de la URL
      *
@@ -97,18 +153,77 @@ abstract class BaseController implements IController
     }
 
     /**
+     * Agrega un mensaje flash para la siguiente petición
+     *
+     * @param string $type Tipo de mensaje (success, error, warning, info)
+     * @param string $message El mensaje a mostrar
+     */
+    protected function flash(string $type, string $message): void
+    {
+        if (!isset($_SESSION['flash_messages'])) {
+            $_SESSION['flash_messages'] = [];
+        }
+        if (!isset($_SESSION['flash_messages'][$type])) {
+            $_SESSION['flash_messages'][$type] = [];
+        }
+        $_SESSION['flash_messages'][$type][] = $message;
+    }
+
+    /**
+     * Determina si la petición es una petición API basándose en los encabezados
+     *
+     * @return bool
+     */
+    protected function isApiRequest(): bool
+    {
+        return isset($_SERVER['HTTP_ACCEPT']) && 
+               (strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false ||
+                strpos($_SERVER['HTTP_CONTENT_TYPE'] ?? '', 'application/json') !== false);
+    }
+
+    /**
      * Envía una respuesta JSON exitosa
      *
-     * @param mixed $data Los datos a enviar en la respuesta
-     * @param int $statusCode Código de estado HTTP (default 200)
+     * @param mixed $data
+     * @param int $statusCode
      * @return void
      */
     public function success($data, int $statusCode = 200): void
     {
         $this->jsonResponse([
-            'error' => false,
+            'success' => true,
             'data' => $data
         ], $statusCode);
     }
 
+    /**
+     * Renderiza una vista usando Twig con los datos proporcionados
+     *
+     * @param string $template
+     * @param array $data
+     * @return void
+     * @throws \RuntimeException Si Twig no está inicializado
+     */
+    private static $hasRendered = false;
+
+    protected function render(string $template, array $data = []): void
+    {
+        if (self::$hasRendered) {
+            return;
+        }
+
+        if (!isset($this->twig)) {
+            throw new \RuntimeException('Twig environment not initialized');
+        }
+
+        // Asegurar que tengamos valores por defecto
+        $data['app_name'] = $_ENV['APP_NAME'] ?? 'Alojamientos Kodigo';
+        $data['app_env'] = $_ENV['APP_ENV'] ?? 'production';
+        $data['is_debug'] = $_ENV['APP_DEBUG'] === 'true';
+        
+        self::$hasRendered = true;
+        $output = $this->twig->render($template, $data);
+        echo $output;
+        exit;
+    }
 }

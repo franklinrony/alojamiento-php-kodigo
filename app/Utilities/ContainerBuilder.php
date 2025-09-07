@@ -94,7 +94,11 @@ class ContainerBuilder
     {
         // Registrar HomeController
         $container->add(HomeController::class)
-            ->addArgument(\Twig\Environment::class);
+            ->addArguments([
+                \Twig\Environment::class,
+                IRequestValidator::class,
+                IAuthenticator::class
+            ]);
 
         // Registrar AuthController
         $container->add(AuthController::class)
@@ -144,12 +148,12 @@ class ContainerBuilder
 
         // Servicios de autenticación
         $container->add(IRoleService::class, RoleService::class)
-            ->addArgument(RoleRepository::class);
+            ->addArgument(IRoleRepository::class);
         $container->add(IPermissionService::class, PermissionService::class)
-            ->addArgument(PermissionRepository::class);
+            ->addArgument(IPermissionRepository::class);
         $container->add(IUserService::class, UserService::class)
-            ->addArgument(UserRepository::class)
-            ->addArgument(RoleRepository::class);
+            ->addArgument(IUserRepository::class)
+            ->addArgument(IRoleRepository::class);
     }
 
     private static function registerAccommodationModule(Container $container): void
@@ -163,7 +167,7 @@ class ContainerBuilder
 
         // Servicio de alojamiento
         $container->add(IAccommodationService::class, AccommodationService::class)
-            ->addArgument(AccommodationRepository::class)
+            ->addArgument(IAccommodationRepository::class)
             ->addArgument(IUserService::class);
     }
 }
