@@ -3,10 +3,10 @@
 namespace App\Repositories;
 
 /**
- * Interface RoleRepositoryInterface
+ * Interface IRoleRepository
  * Interfaz para el repositorio de roles
  */
-interface RoleRepositoryInterface extends RepositoryInterface
+interface IRoleRepository extends RepositoryInterface
 {
     /**
      * Encuentra un rol por su nombre

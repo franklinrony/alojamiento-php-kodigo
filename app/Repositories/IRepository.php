@@ -3,10 +3,10 @@
 namespace App\Repositories;
 
 /**
- * Interface RepositoryInterface
+ * Interface IRepository
  * Interfaz base para todos los repositorios
  */
-interface RepositoryInterface
+interface IRepository
 {
     /**
      * Encuentra un registro por su ID

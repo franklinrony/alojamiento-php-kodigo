@@ -3,10 +3,10 @@
 namespace App\Repositories;
 
 /**
- * Interface AccommodationRepositoryInterface
+ * Interface IAccommodationRepository
  * Interfaz para el repositorio de alojamientos
  */
-interface AccommodationRepositoryInterface extends RepositoryInterface
+interface IAccommodationRepository extends RepositoryInterface
 {
     /**
      * Busca alojamientos por rango de precio

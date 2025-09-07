@@ -3,10 +3,10 @@
 namespace App\Repositories;
 
 /**
- * Interface PermissionRepositoryInterface
+ * Interface IPermissionRepository
  * Interfaz para el repositorio de permisos
  */
-interface PermissionRepositoryInterface extends RepositoryInterface
+interface IPermissionRepository extends RepositoryInterface
 {
     /**
      * Encuentra un permiso por su nombre

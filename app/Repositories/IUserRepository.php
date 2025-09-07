@@ -5,10 +5,10 @@ namespace App\Repositories;
 use App\Models\User;
 
 /**
- * Interface UserRepositoryInterface
+ * Interface IUserRepository
  * Interfaz para el repositorio de usuarios
  */
-interface UserRepositoryInterface extends RepositoryInterface
+interface IUserRepository extends RepositoryInterface
 {
     /**
      * Encuentra un usuario por su email
