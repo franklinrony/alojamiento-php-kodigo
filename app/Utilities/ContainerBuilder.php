@@ -7,6 +7,13 @@ use App\Models\User;
 use App\Models\Role;
 use App\Models\Permission;
 use App\Models\Accommodation;
+use App\Controllers\HomeController;
+use App\Controllers\AuthController;
+use App\Controllers\AccommodationController;
+use App\Middlewares\AuthMiddleware;
+use App\Middlewares\CorsMiddleware;
+use App\Middlewares\PermissionMiddleware;
+use App\Utilities\PathHelper;
 use App\Repositories\Implementations\UserRepository;
 use App\Repositories\Implementations\RoleRepository;
 use App\Repositories\Implementations\PermissionRepository;
@@ -26,8 +33,10 @@ class ContainerBuilder
 
     public static function getInstance(): Container
     {
-        if (self::$instance === null) {
+        static $initialized = false;
+        if (self::$instance === null || !$initialized) {
             self::$instance = self::buildContainer();
+            $initialized = true;
         }
         return self::$instance;
     }
@@ -42,6 +51,10 @@ class ContainerBuilder
         // Registrar módulos según se necesiten
         self::registerAuthModule($container);
         self::registerAccommodationModule($container);
+        
+        // Registrar controladores y middlewares
+        self::registerControllers($container);
+        self::registerMiddlewares($container);
 
         return $container;
     }
@@ -54,6 +67,60 @@ class ContainerBuilder
         // Registrar autenticador
         $container->addShared(IAuthenticator::class, SessionAuthenticator::class)
             ->addArgument(IUserService::class);
+
+        // Configurar Twig como singleton
+        $container->addShared(\Twig\Environment::class, function () {
+            $loader = new \Twig\Loader\FilesystemLoader(PathHelper::getViewsPath());
+            $twig = new \Twig\Environment($loader, [
+                'cache' => PathHelper::getCachePath() . '/twig',
+                'debug' => $_ENV['APP_DEBUG'] === 'true',
+                'auto_reload' => $_ENV['APP_DEBUG'] === 'true'
+            ]);
+            
+            // Si estamos en modo debug, agregar la extensión de debug de Twig
+            if ($_ENV['APP_DEBUG'] === 'true') {
+                $twig->addExtension(new \Twig\Extension\DebugExtension());
+            }
+            
+            return $twig;
+        });
+    }
+
+    private static function registerControllers(Container $container): void
+    {
+        // Registrar HomeController
+        $container->add(HomeController::class)
+            ->addArgument(\Twig\Environment::class);
+
+        // Registrar AuthController
+        $container->add(AuthController::class)
+            ->addArgument(IUserService::class)
+            ->addArgument(\Twig\Environment::class)
+            ->addArgument(IRequestValidator::class)
+            ->addArgument(IAuthenticator::class);
+
+        // Registrar AccommodationController
+        $container->add(AccommodationController::class)
+            ->addArgument(IAccommodationService::class)
+            ->addArgument(\Twig\Environment::class)
+            ->addArgument(IRequestValidator::class)
+            ->addArgument(IAuthenticator::class);
+    }
+
+    private static function registerMiddlewares(Container $container): void
+    {
+        // CORS middleware no requiere dependencias
+        $container->add(CorsMiddleware::class);
+
+        // Auth middleware necesita el autenticador
+        $container->add(AuthMiddleware::class)
+            ->addArgument(IAuthenticator::class);
+
+        // Permission middleware necesita servicios de roles y permisos
+        $container->add(PermissionMiddleware::class)
+            ->addArgument(IUserService::class)
+            ->addArgument(IRoleService::class)
+            ->addArgument(IPermissionService::class);
     }
 
     private static function registerAuthModule(Container $container): void

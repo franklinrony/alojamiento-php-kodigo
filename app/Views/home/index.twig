@@ -1,0 +1,19 @@
+{% extends "layouts/main.twig" %}
+
+{% block content %}
+    <div class="container mt-4">
+        <div class="jumbotron">
+            <h1 class="display-4">Bienvenido a Alojamientos</h1>
+            <p class="lead">Encuentra el lugar perfecto para tu estadía</p>
+            <hr class="my-4">
+            <p>Explora nuestra selección de alojamientos o publica el tuyo.</p>
+            {% if not auth.isAuthenticated %}
+                <a class="btn btn-primary btn-lg" href="/auth/register" role="button">Regístrate</a>
+                <a class="btn btn-outline-primary btn-lg" href="/auth/login" role="button">Iniciar Sesión</a>
+            {% else %}
+                <a class="btn btn-primary btn-lg" href="/accommodations" role="button">Ver Alojamientos</a>
+                <a class="btn btn-success btn-lg" href="/accommodations/create" role="button">Publicar Alojamiento</a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
