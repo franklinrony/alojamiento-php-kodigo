@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Services\IUserService;
+use App\Utilities\IRequestValidator;
+use App\Utilities\IAuthenticator;
 
 /**
  * Class AuthController
@@ -16,11 +18,28 @@ class AuthController extends BaseController
     private $userService;
 
     /**
-     * @param IUserService $userService
+     * @var IRequestValidator|null
      */
-    public function __construct(IUserService $userService)
-    {
+    protected ?IRequestValidator $validator;
+
+    /**
+     * @var IAuthenticator|null
+     */
+    protected ?IAuthenticator $authenticator;
+
+    /**
+     * @param IUserService $userService
+     * @param IRequestValidator $validator
+     * @param IAuthenticator $authenticator
+     */
+    public function __construct(
+        IUserService $userService,
+        IRequestValidator $validator,
+        IAuthenticator $authenticator
+    ) {
         $this->userService = $userService;
+        $this->validator = $validator;
+        $this->authenticator = $authenticator;
     }
 
     /**
@@ -33,25 +52,39 @@ class AuthController extends BaseController
             return;
         }
 
-        $data = $this->getJsonRequest();
-        
-        if (!isset($data['email']) || !isset($data['password']) || !isset($data['name'])) {
-            $this->error('Datos incompletos');
-            return;
-        }
-
         try {
+            $rules = [
+                'email' => ['required' => true, 'type' => 'string', 'email' => true],
+                'password' => ['required' => true, 'type' => 'string', 'min' => 6],
+                'name' => ['required' => true, 'type' => 'string', 'min' => 2]
+            ];
+
+            $data = $this->getJsonRequest($rules);
+
             $user = $this->userService->register($data);
             
-            // No devolver la contraseña en la respuesta
-            unset($user->password);
+            // Autenticar al usuario después del registro si está activo
+            if ($user->isActive()) {
+                $this->authenticator->authenticate($data['email'], $data['password']);
+            }
+            
+            // Preparar respuesta sin datos sensibles
+            $userData = [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'name' => $user->getName()
+            ];
             
             $this->jsonResponse([
+                'success' => true,
                 'message' => 'Usuario registrado exitosamente',
-                'user' => $user
+                'user' => $userData
             ], 201);
+
         } catch (\RuntimeException $e) {
-            $this->error($e->getMessage());
+            $this->error($e->getMessage(), 400);
+        } catch (\Exception $e) {
+            $this->error('Error interno del servidor', 500);
         }
     }
 
@@ -67,33 +100,28 @@ class AuthController extends BaseController
 
         $data = $this->getJsonRequest();
         
-        if (!isset($data['email']) || !isset($data['password'])) {
-            $this->error('Datos incompletos');
+        // Reglas de validación para login
+        $rules = [
+            'email' => ['required' => true, 'type' => 'string', 'email' => true],
+            'password' => ['required' => true, 'type' => 'string', 'min' => 6]
+        ];
+
+        if (!$this->validator->validate($data, $rules)) {
+            $this->error('Errores de validación: ' . implode(', ', $this->validator->getErrors()));
             return;
         }
 
         try {
-            $user = $this->userService->login($data['email'], $data['password']);
-            
-            if (!$user) {
+            if (!$this->authenticator->authenticate($data['email'], $data['password'])) {
                 $this->error('Credenciales inválidas', 401);
                 return;
             }
 
-            // Iniciar sesión
-            session_start();
-            $_SESSION['user_id'] = $user->getId();
-            $_SESSION['user_name'] = $user->getName();
+            $userData = $this->authenticator->getAuthenticatedUser();
+            $this->success($userData, 'Inicio de sesión exitoso');
             
-            // No devolver la contraseña en la respuesta
-            unset($user->password);
-            
-            $this->jsonResponse([
-                'message' => 'Inicio de sesión exitoso',
-                'user' => $user
-            ]);
         } catch (\RuntimeException $e) {
-            $this->error($e->getMessage());
+            $this->error($e->getMessage(), 401);
         }
     }
 
@@ -107,10 +135,14 @@ class AuthController extends BaseController
             return;
         }
 
-        session_start();
-        session_destroy();
-        
+        if (!$this->authenticator->isAuthenticated()) {
+            $this->error('No hay sesión activa', 400);
+            return;
+        }
+
+        $this->authenticator->logout();
         $this->jsonResponse([
+            'success' => true,
             'message' => 'Sesión cerrada exitosamente'
         ]);
     }

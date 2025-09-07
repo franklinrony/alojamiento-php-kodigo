@@ -2,20 +2,28 @@
 
 namespace App\Controllers;
 
+use App\Utilities\IAuthenticator;
+use App\Utilities\IRequestValidator;
+
 /**
  * Class BaseController
  * Controlador base con funcionalidad común
  */
-abstract class BaseController
+abstract class BaseController implements IController
 {
     /**
-     * Devuelve una respuesta JSON
-     *
-     * @param mixed $data
-     * @param int $statusCode
-     * @return void
+     * @var IAuthenticator|null
      */
-    protected function jsonResponse($data, int $statusCode = 200): void
+    protected ?IAuthenticator $authenticator = null;
+
+    /**
+     * @var IRequestValidator|null
+     */
+    protected ?IRequestValidator $validator = null;
+    /**
+     * @inheritDoc
+     */
+    public function jsonResponse($data, int $statusCode = 200): void
     {
         http_response_code($statusCode);
         header('Content-Type: application/json');
@@ -34,13 +42,9 @@ abstract class BaseController
     }
 
     /**
-     * Devuelve un error en formato JSON
-     *
-     * @param string $message
-     * @param int $statusCode
-     * @return void
+     * @inheritDoc
      */
-    protected function error(string $message, int $statusCode = 400): void
+    public function error(string $message, int $statusCode = 400): void
     {
         $this->jsonResponse([
             'error' => true,
@@ -59,6 +63,7 @@ abstract class BaseController
         return $_SERVER['REQUEST_METHOD'] === strtoupper($method);
     }
 
+    
     /**
      * Obtiene un parámetro de la URL
      *
@@ -90,4 +95,20 @@ abstract class BaseController
     {
         return $_SESSION['user_id'] ?? null;
     }
+
+    /**
+     * Envía una respuesta JSON exitosa
+     *
+     * @param mixed $data Los datos a enviar en la respuesta
+     * @param int $statusCode Código de estado HTTP (default 200)
+     * @return void
+     */
+    public function success($data, int $statusCode = 200): void
+    {
+        $this->jsonResponse([
+            'error' => false,
+            'data' => $data
+        ], $statusCode);
+    }
+
 }

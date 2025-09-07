@@ -46,6 +46,22 @@ interface IUserService
     public function assignRole(int $userId, int $roleId): bool;
 
     /**
+     * Busca un usuario por su email
+     * 
+     * @param string $email
+     * @return User|null
+     */
+    public function findByEmail(string $email): ?User;
+
+    /**
+     * Obtiene un usuario por su ID
+     * 
+     * @param int $userId
+     * @return User|null
+     */
+    public function getUser(int $userId): ?User;
+
+    /**
      * Verifica si un usuario tiene un permiso específico
      *
      * @param int $userId
@@ -53,4 +69,6 @@ interface IUserService
      * @return bool
      */
     public function hasPermission(int $userId, string $permissionName): bool;
+
+
 }

@@ -4,6 +4,8 @@ namespace App\Controllers;
 
 use App\Services\IUserService;
 use App\Services\IRoleService;
+use App\Utilities\IRequestValidator;
+use App\Utilities\IAuthenticator;
 
 /**
  * Class UserController
@@ -22,13 +24,31 @@ class UserController extends BaseController
     private $roleService;
 
     /**
+     * @var IRequestValidator|null
+     */
+    protected ?IRequestValidator $validator;
+
+    /**
+     * @var IAuthenticator|null
+     */
+    protected ?IAuthenticator $authenticator;
+
+    /**
      * @param IUserService $userService
      * @param IRoleService $roleService
+     * @param IRequestValidator $validator
+     * @param IAuthenticator $authenticator
      */
-    public function __construct(IUserService $userService, IRoleService $roleService)
-    {
+    public function __construct(
+        IUserService $userService, 
+        IRoleService $roleService,
+        IRequestValidator $validator,
+        IAuthenticator $authenticator
+    ) {
         $this->userService = $userService;
         $this->roleService = $roleService;
+        $this->validator = $validator;
+        $this->authenticator = $authenticator;
     }
 
     /**
@@ -36,12 +56,12 @@ class UserController extends BaseController
      */
     public function profile(): void
     {
-        if (!$this->isAuthenticated()) {
+        if (!$this->authenticator->isAuthenticated()) {
             $this->error('No autorizado', 401);
             return;
         }
 
-        $userId = $this->getAuthUserId();
+        $userId = $this->authenticator->getUserId();
         $user = $this->userService->getUser($userId);
 
         if (!$user) {
@@ -60,7 +80,7 @@ class UserController extends BaseController
      */
     public function updateProfile(): void
     {
-        if (!$this->isAuthenticated()) {
+        if (!$this->authenticator->isAuthenticated()) {
             $this->error('No autorizado', 401);
             return;
         }
@@ -70,8 +90,23 @@ class UserController extends BaseController
             return;
         }
 
-        $userId = $this->getAuthUserId();
         $data = $this->getJsonRequest();
+        
+        // Reglas de validación para actualización de perfil
+        $rules = [
+            'name' => ['type' => 'string', 'min' => 2],
+            'email' => ['type' => 'string', 'email' => true],
+            'current_password' => ['type' => 'string', 'min' => 6],
+            'new_password' => ['type' => 'string', 'min' => 6]
+        ];
+
+        if (!$this->validator->validate($data, $rules)) {
+            $this->error('Errores de validación: ' . implode(', ', $this->validator->getErrors()));
+            return;
+        }
+
+        $data = $this->validator->sanitize($data);
+        $userId = $this->authenticator->getUserId();
 
         try {
             $user = $this->userService->updateUser($userId, $data);
@@ -98,7 +133,7 @@ class UserController extends BaseController
      */
     public function assignRole(): void
     {
-        if (!$this->isAuthenticated()) {
+        if (!$this->authenticator->isAuthenticated()) {
             $this->error('No autorizado', 401);
             return;
         }
@@ -109,15 +144,21 @@ class UserController extends BaseController
         }
 
         // Verificar permiso de administración
-        if (!$this->userService->hasPermission($this->getAuthUserId(), 'manage_users')) {
+        if (!$this->userService->hasPermission($this->authenticator->getUserId(), 'manage_users')) {
             $this->error('No tiene permisos para realizar esta acción', 403);
             return;
         }
 
         $data = $this->getJsonRequest();
         
-        if (!isset($data['user_id']) || !isset($data['role_id'])) {
-            $this->error('Datos incompletos');
+        // Reglas de validación para asignación de rol
+        $rules = [
+            'user_id' => ['required' => true, 'type' => 'integer'],
+            'role_id' => ['required' => true, 'type' => 'integer']
+        ];
+
+        if (!$this->validator->validate($data, $rules)) {
+            $this->error('Errores de validación: ' . implode(', ', $this->validator->getErrors()));
             return;
         }
 

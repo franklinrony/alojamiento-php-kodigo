@@ -44,8 +44,19 @@ class UserService implements IUserService
 
         // Asegurarse de que el usuario esté activo por defecto
         $userData['active'] = true;
+        
+        // Hash de la contraseña
+        $userData['password'] = password_hash($userData['password'], PASSWORD_DEFAULT);
 
         return $this->userRepository->create($userData);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function findByEmail(string $email): ?User
+    {
+        return $this->userRepository->findByEmail($email);
     }
 
     /**
@@ -115,5 +126,13 @@ class UserService implements IUserService
         }
 
         return $user->getRole()->hasPermission($permissionName);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getUser(int $userId): ?User
+    {
+        return $this->userRepository->find($userId);
     }
 }

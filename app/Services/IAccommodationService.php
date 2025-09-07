@@ -64,4 +64,12 @@ interface IAccommodationService
      * @return bool
      */
     public function canManageAccommodation(int $userId, int $accommodationId): bool;
+
+    /**
+     * Obtiene un alojamiento por su ID
+     *
+     * @param int $id
+     * @return Accommodation|null
+     */
+    public function getAccommodation(int $id): ?Accommodation;
 }

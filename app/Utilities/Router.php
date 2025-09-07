@@ -4,6 +4,7 @@ namespace App\Utilities;
 
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
+use League\Container\Container;
 use function FastRoute\simpleDispatcher;
 
 /**
@@ -18,14 +19,14 @@ class Router
     private $dispatcher;
 
     /**
-     * @var array
+     * @var Container
      */
     private $container;
 
     /**
-     * @param array $container Contenedor de dependencias
+     * @param Container $container Contenedor de dependencias
      */
-    public function __construct(array $container = [])
+    public function __construct(Container $container)
     {
         $this->container = $container;
         $this->initializeDispatcher();
@@ -112,30 +113,12 @@ class Router
      */
     private function resolveController(string $controllerClass): object
     {
-        // Obtener los parámetros del constructor
-        $reflection = new \ReflectionClass($controllerClass);
-        $constructor = $reflection->getConstructor();
-
-        if (!$constructor) {
-            return new $controllerClass();
+        // Registrar el controlador en el contenedor si no existe
+        if (!$this->container->has($controllerClass)) {
+            $this->container->add($controllerClass);
         }
 
-        // Resolver las dependencias del constructor
-        $parameters = $constructor->getParameters();
-        $dependencies = [];
-
-        foreach ($parameters as $parameter) {
-            $type = $parameter->getType()->getName();
-            
-            // Buscar la implementación en el contenedor
-            if (isset($this->container[$type])) {
-                $dependencies[] = $this->container[$type];
-            } else {
-                // Si no está en el contenedor, intentar crear una instancia directamente
-                $dependencies[] = new $type();
-            }
-        }
-
-        return new $controllerClass(...$dependencies);
+        // Resolver el controlador usando el contenedor
+        return $this->container->get($controllerClass);
     }
 }

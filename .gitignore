@@ -25,6 +25,13 @@ var/
 *.sln
 *.sw?
 .cursor
-.taskmaster/
+
+# TaskMaster files
+.taskmaster/*
+!.taskmaster/rules/
+!.taskmaster/rules/*.json
 # OS specific
 .DS_Store
+
+.roomodes
+.roo/

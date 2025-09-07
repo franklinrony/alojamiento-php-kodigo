@@ -119,4 +119,12 @@ class AccommodationService implements IAccommodationService
         return $accommodation->getCreatedBy() === $userId ||
                $this->userService->hasPermission($userId, 'manage_all_accommodations');
     }
+
+    /**
+     * @inheritDoc
+     */
+    public function getAccommodation(int $id): ?Accommodation
+    {
+        return $this->accommodationRepository->find($id);
+    }
 }
