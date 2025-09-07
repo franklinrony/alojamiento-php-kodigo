@@ -4,10 +4,11 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use App\Utilities\Router;
 use App\Utilities\ContainerBuilder;
+use App\Utilities\PathHelper;
 use Dotenv\Dotenv;
 
 // Cargar variables de entorno
-$dotenv = Dotenv::createImmutable(__DIR__ . '/..');
+$dotenv = Dotenv::createImmutable(PathHelper::projectRoot());
 $dotenv->load();
 
 // Configurar manejo de errores

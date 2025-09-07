@@ -37,7 +37,7 @@ class Router
      */
     private function initializeDispatcher(): void
     {
-        $routesFile = __DIR__ . '/../../config/routes/api.php';
+        $routesFile = PathHelper::fromRoot('config/routes/api.php');
         $routeDefinitionCallback = require $routesFile;
 
         $this->dispatcher = simpleDispatcher($routeDefinitionCallback);
