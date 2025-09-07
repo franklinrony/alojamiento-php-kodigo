@@ -53,91 +53,63 @@ class Router
      */
     public function dispatch(): void
     {
-        static $dispatchCount = 0;
-        $dispatchCount++;
-        
-        // Log para debug
-        error_log("Dispatch llamado {$dispatchCount} veces");
-        
         // Obtener método y URI de la petición actual
         $httpMethod = $_SERVER['REQUEST_METHOD'];
-        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $uri = $this->getUri();
         
         error_log("Procesando ruta: {$uri} con método {$httpMethod}");
         
         // Obtener información de la ruta
         $routeInfo = $this->dispatcher->dispatch($httpMethod, $uri);
-        
-        switch ($routeInfo[0]) {
-            case Dispatcher::NOT_FOUND:
-                http_response_code(404);
-                echo json_encode(['error' => true, 'message' => 'Ruta no encontrada']);
-                break;
-                
-            case Dispatcher::METHOD_NOT_ALLOWED:
-                http_response_code(405);
-                echo json_encode(['error' => true, 'message' => 'Método no permitido']);
-                break;
-                
-            case Dispatcher::FOUND:
-                $handler = $routeInfo[1];
-                $vars = $routeInfo[2];
-                
-                // Obtener el controlador y método
-                [$controllerClass, $method] = $handler;
-                
-                // Instanciar el controlador usando el contenedor
-                $controller = $this->container->get($controllerClass);
-                
-                // Crear el manejador final que ejecutará el método del controlador
-                $finalHandler = function() use ($controller, $method, $vars) {
-                    return $controller->$method($vars);
-                };
-                
-                // Crear el dispatcher de middlewares
-                $middlewareDispatcher = new \App\Middlewares\MiddlewareDispatcher($finalHandler);
-                
-                // Agregar middleware de CORS por defecto
-                $middlewareDispatcher->addMiddleware($this->container->get(\App\Middlewares\CorsMiddleware::class));
-                
-                // Si la ruta requiere autenticación, agregar el middleware de auth
-                if (isset($handler['middleware']) && in_array('auth', $handler['middleware'])) {
-                    $middlewareDispatcher->addMiddleware($this->container->get(\App\Middlewares\AuthMiddleware::class));
-                }
-                
-                // Si hay un permiso específico requerido
-                if (isset($handler['permission'])) {
-                    $permissionMiddleware = new \App\Middlewares\PermissionMiddleware(
-                        $this->container->get(\App\Services\IUserService::class),
-                        $handler['permission']
-                    );
-                    $middlewareDispatcher->addMiddleware($permissionMiddleware);
-                }
-                
-                // Ejecutar la cadena de middlewares
-                $middlewareDispatcher->dispatch();
-                break;
-        }
-        $httpMethod = $_SERVER['REQUEST_METHOD'];
-        $uri = $this->getUri();
-
-        $routeInfo = $this->dispatcher->dispatch($httpMethod, $uri);
 
         switch ($routeInfo[0]) {
             case Dispatcher::NOT_FOUND:
                 http_response_code(404);
-                echo json_encode(['error' => 'Not found']);
+                if ($this->isApiRequest()) {
+                    header('Content-Type: application/json');
+                    echo json_encode(['error' => true, 'message' => 'Ruta no encontrada']);
+                } else {
+                    // Para rutas web, mostrar una página 404
+                    if ($this->container->has(\Twig\Environment::class)) {
+                        $twig = $this->container->get(\Twig\Environment::class);
+                        echo $twig->render('errors/404.twig', [
+                            'pageTitle' => 'Página no encontrada'
+                        ]);
+                    } else {
+                        echo 'Página no encontrada';
+                    }
+                }
                 break;
 
             case Dispatcher::METHOD_NOT_ALLOWED:
                 http_response_code(405);
-                echo json_encode(['error' => 'Method not allowed']);
+                if ($this->isApiRequest()) {
+                    header('Content-Type: application/json');
+                    echo json_encode(['error' => true, 'message' => 'Método no permitido']);
+                } else {
+                    // Para rutas web, mostrar una página 405
+                    if ($this->container->has(\Twig\Environment::class)) {
+                        $twig = $this->container->get(\Twig\Environment::class);
+                        echo $twig->render('errors/405.twig', [
+                            'pageTitle' => 'Método no permitido'
+                        ]);
+                    } else {
+                        echo 'Método no permitido';
+                    }
+                }
                 break;
 
             case Dispatcher::FOUND:
                 $handler = $routeInfo[1];
                 $vars = $routeInfo[2];
-                $this->handleFoundRoute($handler, $vars);
+                
+                if (is_array($handler)) {
+                    // Si el handler es un array, procesar con middleware
+                    $this->handleRouteWithMiddleware($handler, $vars);
+                } else {
+                    // Si es una ruta simple, manejarla directamente
+                    $this->handleFoundRoute($handler, $vars);
+                }
                 break;
         }
     }
@@ -190,5 +162,59 @@ class Router
 
         // Resolver el controlador usando el contenedor
         return $this->container->get($controllerClass);
+    }
+
+    /**
+     * Maneja una ruta con middleware
+     * 
+     * @param array $handler
+     * @param array $vars
+     */
+    private function handleRouteWithMiddleware(array $handler, array $vars): void
+    {
+        [$controllerClass, $method] = $handler;
+        
+        // Instanciar el controlador usando el contenedor
+        $controller = $this->container->get($controllerClass);
+        
+        // Crear el manejador final que ejecutará el método del controlador
+        $finalHandler = function() use ($controller, $method, $vars) {
+            return $controller->$method(...array_values($vars));
+        };
+        
+        // Crear el dispatcher de middlewares
+        $middlewareDispatcher = new \App\Middlewares\MiddlewareDispatcher($finalHandler);
+        
+        // Agregar middleware de CORS por defecto
+        $middlewareDispatcher->addMiddleware($this->container->get(\App\Middlewares\CorsMiddleware::class));
+        
+        // Si la ruta requiere autenticación, agregar el middleware de auth
+        if (isset($handler['middleware']) && in_array('auth', $handler['middleware'])) {
+            $middlewareDispatcher->addMiddleware($this->container->get(\App\Middlewares\AuthMiddleware::class));
+        }
+        
+        // Si hay un permiso específico requerido
+        if (isset($handler['permission'])) {
+            $permissionMiddleware = new \App\Middlewares\PermissionMiddleware(
+                $this->container->get(\App\Services\IUserService::class),
+                $handler['permission']
+            );
+            $middlewareDispatcher->addMiddleware($permissionMiddleware);
+        }
+        
+        // Ejecutar la cadena de middlewares
+        $middlewareDispatcher->dispatch();
+    }
+
+    /**
+     * Determina si la petición actual es una petición a la API
+     *
+     * @return bool
+     */
+    private function isApiRequest(): bool
+    {
+        $uri = $this->getUri();
+        return strpos($uri, '/api/') === 0 || 
+               strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false;
     }
 }

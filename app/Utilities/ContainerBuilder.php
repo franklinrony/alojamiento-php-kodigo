@@ -100,6 +100,16 @@ class ContainerBuilder
                 IAuthenticator::class
             ]);
 
+        // Registrar UserController
+        $container->add(\App\Controllers\UserController::class)
+            ->addArguments([
+                \Twig\Environment::class,
+                IRequestValidator::class,
+                IAuthenticator::class,
+                IUserService::class,
+                IRoleService::class
+            ]);
+
         // Registrar AuthController
         $container->add(AuthController::class)
             ->addArgument(IUserService::class)

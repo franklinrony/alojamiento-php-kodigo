@@ -1,0 +1,41 @@
+{% extends "layouts/main.twig" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">Mi Perfil</div>
+                <div class="card-body">
+                    {% if flash.success %}
+                        <div class="alert alert-success">{{ flash.success }}</div>
+                    {% endif %}
+                    {% if flash.error %}
+                        <div class="alert alert-danger">{{ flash.error }}</div>
+                    {% endif %}
+
+                    <form method="POST" action="/profile">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ auth.user.name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Correo Electrónico</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ auth.user.email }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Nueva Contraseña (dejar en blanco para mantener la actual)</label>
+                            <input type="password" class="form-control" id="password" name="password">
+                        </div>
+                        <div class="mb-3">
+                            <label for="passwordConfirm" class="form-label">Confirmar Nueva Contraseña</label>
+                            <input type="password" class="form-control" id="passwordConfirm" name="passwordConfirm">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Actualizar Perfil</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
