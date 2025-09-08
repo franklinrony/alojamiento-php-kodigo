@@ -59,4 +59,19 @@ class PermissionRepository extends BaseRepository implements IPermissionReposito
             return $role;
         }, $stmt->fetchAll());
     }
+
+    /**
+     * @inheritDoc
+     */
+    public function getPermissionsByRoleId(int $roleId): array
+    {
+        $sql = "SELECT p.* FROM permissions p
+                INNER JOIN permission_role pr ON p.id = pr.permission_id
+                WHERE pr.role_id = :role_id";
+                
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['role_id' => $roleId]);
+        
+        return array_map(fn($data) => $this->mapToModel($data), $stmt->fetchAll());
+    }
 }

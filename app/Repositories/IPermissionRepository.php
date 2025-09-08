@@ -23,4 +23,12 @@ interface IPermissionRepository extends IRepository
      * @return array
      */
     public function getRoles(int $permissionId);
+
+    /**
+     * Obtiene todos los permisos asociados a un rol
+     *
+     * @param int $roleId
+     * @return array
+     */
+    public function getPermissionsByRoleId(int $roleId): array;
 }

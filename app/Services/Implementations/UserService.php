@@ -5,6 +5,7 @@ namespace App\Services\Implementations;
 use App\Models\User;
 use App\Repositories\IUserRepository;
 use App\Repositories\IRoleRepository;
+use App\Repositories\IPermissionRepository;
 use App\Services\IUserService;
 
 /**
@@ -24,13 +25,23 @@ class UserService implements IUserService
     private $roleRepository;
 
     /**
+     * @var IPermissionRepository
+     */
+    private $permissionRepository;
+
+    /**
      * @param IUserRepository $userRepository
      * @param IRoleRepository $roleRepository
+     * @param IPermissionRepository $permissionRepository
      */
-    public function __construct(IUserRepository $userRepository, IRoleRepository $roleRepository)
-    {
+    public function __construct(
+        IUserRepository $userRepository, 
+        IRoleRepository $roleRepository,
+        IPermissionRepository $permissionRepository
+    ) {
         $this->userRepository = $userRepository;
         $this->roleRepository = $roleRepository;
+        $this->permissionRepository = $permissionRepository;
     }
 
     /**
@@ -136,14 +147,24 @@ class UserService implements IUserService
     /**
      * @inheritDoc
      */
-    public function hasPermission(int $userId, string $permissionName): bool
+    public function getUserPermissions(int $userId): array
     {
         $user = $this->userRepository->find($userId);
-        if (!$user || !$user->getRole()) {
-            return false;
+        if (!$user || !$user->getRoleId()) {
+            return [];
         }
 
-        return $user->getRole()->hasPermission($permissionName);
+        $permissions = $this->permissionRepository->getPermissionsByRoleId($user->getRoleId());
+        return array_map(fn($permission) => $permission->getName(), $permissions);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function hasPermission(int $userId, string $permissionName): bool
+    {
+        $permissions = $this->getUserPermissions($userId);
+        return in_array($permissionName, $permissions, true);
     }
 
     /**

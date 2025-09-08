@@ -70,5 +70,11 @@ interface IUserService
      */
     public function hasPermission(int $userId, string $permissionName): bool;
 
-
+    /**
+     * Obtiene los permisos de un usuario
+     * 
+     * @param int $userId
+     * @return array Lista de nombres de permisos
+     */
+    public function getUserPermissions(int $userId): array;
 }

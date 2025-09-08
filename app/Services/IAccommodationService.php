@@ -11,6 +11,13 @@ use App\Models\Accommodation;
 interface IAccommodationService
 {
     /**
+     * Obtiene todos los alojamientos
+     *
+     * @return array
+     */
+    public function getAllAccommodations(): array;
+
+    /**
      * Crea un nuevo alojamiento
      *
      * @param array $accommodationData

@@ -120,15 +120,25 @@ class Router
      * @param array $handler
      * @param array $vars
      */
-    private function handleFoundRoute(array $handler, array $vars): void
+    private function handleFoundRoute($handler, array $vars): void
     {
-        [$controllerClass, $method] = $handler;
+        if (is_array($handler)) {
+            [$controllerClass, $method] = $handler;
 
-        // Crear instancia del controlador con sus dependencias
-        $controller = $this->resolveController($controllerClass);
+            // Crear instancia del controlador con sus dependencias
+            $controller = $this->resolveController($controllerClass);
 
-        // Llamar al método del controlador con los parámetros de la ruta
-        $controller->$method(...array_values($vars));
+            // Llamar al método del controlador con los parámetros de la ruta
+            $controller->$method(...array_values($vars));
+        } elseif ($handler instanceof \Closure) {
+            // Si es una función closure, ejecutarla con el container
+            $request = $this->container->has('request') ? $this->container->get('request') : null;
+            $response = $this->container->has('response') ? $this->container->get('response') : null;
+            
+            $handler($request, $response, ...array_values($vars));
+        } else {
+            throw new \RuntimeException('Handler inválido para la ruta');
+        }
     }
 
     /**
@@ -155,9 +165,9 @@ class Router
      */
     private function resolveController(string $controllerClass): object
     {
-        // Registrar el controlador en el contenedor si no existe
+        // Verificar si el controlador está registrado en el contenedor
         if (!$this->container->has($controllerClass)) {
-            $this->container->add($controllerClass);
+            throw new \RuntimeException("Controlador {$controllerClass} no está registrado en el contenedor de dependencias");
         }
 
         // Resolver el controlador usando el contenedor
@@ -188,12 +198,23 @@ class Router
         // Agregar middleware de CORS por defecto
         $middlewareDispatcher->addMiddleware($this->container->get(\App\Middlewares\CorsMiddleware::class));
         
-        // Si la ruta requiere autenticación, agregar el middleware de auth
-        if (isset($handler['middleware']) && in_array('auth', $handler['middleware'])) {
-            $middlewareDispatcher->addMiddleware($this->container->get(\App\Middlewares\AuthMiddleware::class));
+        // Procesar middlewares
+        if (isset($handler['middleware'])) {
+            foreach ($handler['middleware'] as $middleware) {
+                if ($middleware === 'auth') {
+                    $middlewareDispatcher->addMiddleware($this->container->get(\App\Middlewares\AuthMiddleware::class));
+                } elseif (strpos($middleware, 'permission:') === 0) {
+                    $permission = substr($middleware, 11); // Remover 'permission:'
+                    $permissionMiddleware = new \App\Middlewares\PermissionMiddleware(
+                        $this->container->get(\App\Services\IUserService::class),
+                        $permission
+                    );
+                    $middlewareDispatcher->addMiddleware($permissionMiddleware);
+                }
+            }
         }
         
-        // Si hay un permiso específico requerido
+        // Si hay un permiso específico requerido (formato legacy)
         if (isset($handler['permission'])) {
             $permissionMiddleware = new \App\Middlewares\PermissionMiddleware(
                 $this->container->get(\App\Services\IUserService::class),

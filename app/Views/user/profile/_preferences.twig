@@ -1,0 +1,43 @@
+{% set preference_errors = flash('preference_errors') %}
+{% set preference_success = flash('preference_success') %}
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h2 class="h5 mb-0">Preferencias de Cuenta</h2>
+    </div>
+    <div class="card-body">
+        {% if preference_success %}
+            <div class="alert alert-success">{{ preference_success }}</div>
+        {% endif %}
+
+        {% if preference_errors %}
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    {% for error in preference_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url('/profile/preferences') }}">
+            <div class="form-group mb-3">
+                <label for="notifications">Notificaciones</label>
+                <select class="form-control" id="notifications" name="notifications">
+                    <option value="all" {% if preferences.notifications == 'all' %}selected{% endif %}>Todas</option>
+                    <option value="important" {% if preferences.notifications == 'important' %}selected{% endif %}>Solo importantes</option>
+                    <option value="none" {% if preferences.notifications == 'none' %}selected{% endif %}>Ninguna</option>
+                </select>
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="email_updates" name="email_updates" value="1" {% if preferences.email_updates %}checked{% endif %}>
+                <label class="form-check-label" for="email_updates">
+                    Recibir actualizaciones por email
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Guardar Preferencias</button>
+        </form>
+    </div>
+</div>

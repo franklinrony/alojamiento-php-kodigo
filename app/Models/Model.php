@@ -9,6 +9,50 @@ namespace App\Models;
 abstract class Model
 {
     /**
+     * @var string
+     */
+    protected static $table;
+
+    /**
+     * Constructor
+     *
+     * @param array $data Datos iniciales del modelo
+     */
+    public function __construct(array $data = [])
+    {
+        if (!empty($data)) {
+            $this->fill($data);
+        }
+    }
+
+    /**
+     * @return string
+     */
+    public static function getTableName(): string
+    {
+        if (empty(static::$table)) {
+            $class = static::class;
+            $parts = explode('\\', $class);
+            $modelName = end($parts);
+            // Convert camel case to snake case
+            $tableName = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $modelName));
+            return $tableName . 's';
+        }
+        return static::$table;
+    }
+
+    /**
+     * Crea una nueva instancia del modelo desde un array
+     *
+     * @param array $data
+     * @return static
+     */
+    public static function fromArray(array $data): self
+    {
+        return new static($data);
+    }
+
+    /**
      * ID del registro
      *
      * @var int

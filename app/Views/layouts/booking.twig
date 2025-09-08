@@ -1,0 +1,457 @@
+{% if not _rendered is defined %}
+{% set _rendered = true %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ pageTitle|default('Alojamientos') }}{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --booking-blue: #003580;
+            --booking-light-blue: #0071c2;
+            --booking-yellow: #ffb700;
+            --booking-green: #008009;
+            --booking-red: #e72929;
+            --booking-gray: #6b7280;
+            --booking-light-gray: #f3f4f6;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+        }
+        
+        .booking-header {
+            background: var(--booking-blue);
+            color: white;
+            padding: 0.5rem 0;
+        }
+        
+        .booking-nav {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+        }
+        
+        .booking-logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--booking-blue);
+            text-decoration: none;
+        }
+        
+        .booking-logo:hover {
+            color: var(--booking-light-blue);
+        }
+        
+        .nav-link {
+            color: var(--booking-blue) !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem !important;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover {
+            background-color: var(--booking-light-gray);
+            color: var(--booking-light-blue) !important;
+        }
+        
+        .btn-booking {
+            background-color: var(--booking-blue);
+            border-color: var(--booking-blue);
+            color: white;
+            font-weight: 500;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+        
+        .btn-booking:hover {
+            background-color: var(--booking-light-blue);
+            border-color: var(--booking-light-blue);
+            color: white;
+        }
+        
+        .btn-booking-outline {
+            border: 2px solid var(--booking-blue);
+            color: var(--booking-blue);
+            background: transparent;
+            font-weight: 500;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+        
+        .btn-booking-outline:hover {
+            background-color: var(--booking-blue);
+            color: white;
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--booking-blue) 0%, var(--booking-light-blue) 100%);
+            color: white;
+            padding: 4rem 0;
+        }
+        
+        .search-container {
+            background: var(--booking-yellow);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .search-input {
+            border: none;
+            border-radius: 0.375rem;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            width: 100%;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0,113,194,0.1);
+        }
+        
+        .benefit-card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            height: 100%;
+        }
+        
+        .benefit-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .benefit-icon {
+            font-size: 2.5rem;
+            color: var(--booking-blue);
+            margin-bottom: 1rem;
+        }
+        
+        .accommodation-card {
+            background: white;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            height: 100%;
+        }
+        
+        .accommodation-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        
+        .accommodation-image {
+            height: 200px;
+            background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--booking-gray);
+            font-size: 3rem;
+        }
+        
+        .accommodation-info {
+            padding: 1.5rem;
+        }
+        
+        .accommodation-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--booking-blue);
+            margin-bottom: 0.5rem;
+        }
+        
+        .accommodation-location {
+            color: var(--booking-gray);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        .accommodation-price {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--booking-green);
+        }
+        
+        .offer-badge {
+            background: var(--booking-green);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--booking-blue);
+            margin-bottom: 1rem;
+        }
+        
+        .section-subtitle {
+            color: var(--booking-gray);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .destination-card {
+            background: white;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            height: 100%;
+        }
+        
+        .destination-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .destination-image {
+            height: 150px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+        }
+        
+        .destination-info {
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .destination-name {
+            font-weight: 600;
+            color: var(--booking-blue);
+        }
+        
+        .footer-section {
+            background: #1f2937;
+            color: white;
+            padding: 3rem 0 1rem;
+        }
+        
+        .footer-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: white;
+        }
+        
+        .footer-link {
+            color: #d1d5db;
+            text-decoration: none;
+            display: block;
+            padding: 0.25rem 0;
+            transition: color 0.2s;
+        }
+        
+        .footer-link:hover {
+            color: white;
+        }
+        
+        .footer-bottom {
+            border-top: 1px solid #374151;
+            padding-top: 1rem;
+            margin-top: 2rem;
+            color: #9ca3af;
+        }
+        
+        .rating {
+            color: var(--booking-yellow);
+        }
+        
+        .price-original {
+            text-decoration: line-through;
+            color: var(--booking-gray);
+            font-size: 0.9rem;
+        }
+        
+        .price-discount {
+            color: var(--booking-green);
+            font-weight: 700;
+        }
+    </style>
+    
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <!-- Header -->
+    <header class="booking-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <span class="me-3">USD</span>
+                        <i class="bi bi-question-circle me-3"></i>
+                        <a href="#" class="text-white text-decoration-none me-3">Registra tu alojamiento</a>
+                        {% if not user %}
+                            <a href="/auth/register" class="text-white text-decoration-none me-3">Hazte una cuenta</a>
+                            <a href="/auth/login" class="text-white text-decoration-none">Inicia sesión</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    {% if user %}
+                        <span class="me-3">Hola, {{ user.name }}</span>
+                        <a href="/profile" class="text-white text-decoration-none me-3">Mi perfil</a>
+                        <a href="/auth/logout" class="text-white text-decoration-none">Cerrar sesión</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="booking-nav">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <a href="/" class="booking-logo">
+                        <i class="bi bi-house-door me-2"></i>Alojamientos
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <ul class="nav nav-pills justify-content-center">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/">
+                                <i class="bi bi-house me-1"></i>Alojamiento
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-airplane me-1"></i>Vuelos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-car-front me-1"></i>Alquiler de coches
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-geo-alt me-1"></i>Atracciones
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-taxi-front me-1"></i>Taxis aeropuerto
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-3 text-md-end">
+                    {% if user and user.role and user.role.name == 'admin' %}
+                        <a href="/admin" class="btn btn-booking-outline me-2">
+                            <i class="bi bi-speedometer2 me-1"></i>Admin
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% for type, messages in flash %}
+        {% for message in messages %}
+            {% set alertType = type == 'error' ? 'danger' : type %}
+            <div class="container mt-3">
+                <div class="alert alert-{{ alertType }} alert-dismissible fade show" role="alert">
+                    {% if type == 'success' %}
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                    {% elseif type == 'error' %}
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    {% elseif type == 'info' %}
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                    {% elseif type == 'warning' %}
+                        <i class="bi bi-exclamation-circle-fill me-2"></i>
+                    {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                </div>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <h5 class="footer-title">Países</h5>
+                    <a href="#" class="footer-link">El Salvador</a>
+                    <a href="#" class="footer-link">Guatemala</a>
+                    <a href="#" class="footer-link">Honduras</a>
+                    <a href="#" class="footer-link">Nicaragua</a>
+                    <a href="#" class="footer-link">Costa Rica</a>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <h5 class="footer-title">Ayuda</h5>
+                    <a href="#" class="footer-link">Preguntas frecuentes</a>
+                    <a href="#" class="footer-link">Gestiona tus viajes</a>
+                    <a href="#" class="footer-link">Contactar con Atención al cliente</a>
+                    <a href="#" class="footer-link">Centro de recursos sobre seguridad</a>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <h5 class="footer-title">Descubre</h5>
+                    <a href="#" class="footer-link">Ofertas de temporada</a>
+                    <a href="#" class="footer-link">Artículos de viajes</a>
+                    <a href="#" class="footer-link">Alquiler de coches</a>
+                    <a href="#" class="footer-link">Reservas en restaurantes</a>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <h5 class="footer-title">Términos y configuración</h5>
+                    <a href="#" class="footer-link">Privacidad y cookies</a>
+                    <a href="#" class="footer-link">Condiciones del servicio</a>
+                    <a href="#" class="footer-link">Declaración de accesibilidad</a>
+                    <a href="#" class="footer-link">Información corporativa</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <p class="mb-0">&copy; {{ "now"|date("Y") }} Alojamientos. Todos los derechos reservados.</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <span class="me-3">USD</span>
+                        <small>Alojamientos forma parte del ecosistema de viajes online.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+{% endif %}

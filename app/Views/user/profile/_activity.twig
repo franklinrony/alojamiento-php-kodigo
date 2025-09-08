@@ -1,0 +1,33 @@
+{% if activities|length > 0 %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="h5 mb-0">Historial de Actividades</h2>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Actividad</th>
+                        <th>Detalles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for activity in activities %}
+                    <tr>
+                        <td>{{ activity.created_at|date('d/m/Y H:i') }}</td>
+                        <td>{{ activity.type }}</td>
+                        <td>{{ activity.details }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    No hay actividades registradas.
+</div>
+{% endif %}

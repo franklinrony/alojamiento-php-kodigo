@@ -16,13 +16,28 @@ class UserSeeder extends AbstractSeed
      */
     public function run(): void
     {
+        // Limpiar datos existentes primero
+        $this->execute('DELETE FROM permission_role');
+        $this->execute('DELETE FROM users');
+        $this->execute('DELETE FROM accommodations');
+        $this->execute('DELETE FROM permissions');
+        $this->execute('DELETE FROM roles');
+
         // Permisos básicos
         $permissions = [
-            ['name' => 'manage_users', 'description' => 'Gestionar usuarios'],
-            ['name' => 'manage_accommodations', 'description' => 'Gestionar alojamientos'],
-            ['name' => 'view_accommodations', 'description' => 'Ver alojamientos'],
+            ['name' => 'access-admin', 'description' => 'Acceder al panel de administración'],
+            ['name' => 'manage-users', 'description' => 'Gestionar usuarios'],
+            ['name' => 'manage-accommodations', 'description' => 'Gestionar alojamientos'],
+            ['name' => 'view-accommodations', 'description' => 'Ver alojamientos'],
         ];
         $this->table('permissions')->insert($permissions)->saveData();
+
+        // Obtener IDs de permisos insertados
+        $permissionIds = [];
+        foreach ($permissions as $permission) {
+            $result = $this->fetchRow("SELECT id FROM permissions WHERE name = '{$permission['name']}'");
+            $permissionIds[$permission['name']] = $result['id'];
+        }
 
         // Roles
         $roles = [
@@ -31,16 +46,24 @@ class UserSeeder extends AbstractSeed
         ];
         $this->table('roles')->insert($roles)->saveData();
 
-        // Relacionar permisos con roles (admin: todos, user: solo ver)
+        // Obtener IDs de roles insertados
+        $roleIds = [];
+        foreach ($roles as $role) {
+            $result = $this->fetchRow("SELECT id FROM roles WHERE name = '{$role['name']}'");
+            $roleIds[$role['name']] = $result['id'];
+        }
+
+        // Relacionar permisos con roles usando IDs reales
         $rolePermissions = [
             // admin: todos los permisos
-            ['role_id' => 1, 'permission_id' => 1],
-            ['role_id' => 1, 'permission_id' => 2],
-            ['role_id' => 1, 'permission_id' => 3],
+            ['role_id' => $roleIds['admin'], 'permission_id' => $permissionIds['access-admin']],
+            ['role_id' => $roleIds['admin'], 'permission_id' => $permissionIds['manage-users']],
+            ['role_id' => $roleIds['admin'], 'permission_id' => $permissionIds['manage-accommodations']],
+            ['role_id' => $roleIds['admin'], 'permission_id' => $permissionIds['view-accommodations']],
             // user: solo ver alojamientos
-            ['role_id' => 2, 'permission_id' => 3],
+            ['role_id' => $roleIds['user'], 'permission_id' => $permissionIds['view-accommodations']],
         ];
-        $this->table('role_permissions')->insert($rolePermissions)->saveData();
+        $this->table('permission_role')->insert($rolePermissions)->saveData();
 
         // Usuarios por defecto
         $password = password_hash('qwerty', PASSWORD_DEFAULT);
@@ -49,25 +72,16 @@ class UserSeeder extends AbstractSeed
                 'name' => 'Admin',
                 'email' => 'admin@demo.com',
                 'password' => $password,
-                'role_id' => 1,
+                'role_id' => $roleIds['admin'],
                 'active' => 1,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
             ],
             [
-                'name' => 'Usuario1',
-                'email' => 'user1@demo.com',
+                'name' => 'Usuario Demo',
+                'email' => 'user@demo.com',
                 'password' => $password,
-                'role_id' => 2,
-                'active' => 1,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Usuario2',
-                'email' => 'user2@demo.com',
-                'password' => $password,
-                'role_id' => 2,
+                'role_id' => $roleIds['user'],
                 'active' => 1,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),

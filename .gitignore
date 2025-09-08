@@ -35,3 +35,7 @@ var/
 
 .roomodes
 .roo/
+
+# Task files
+# tasks.json
+# tasks/ 

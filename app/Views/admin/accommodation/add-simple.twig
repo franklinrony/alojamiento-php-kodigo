@@ -1,0 +1,119 @@
+{% extends "layouts/simple.twig" %}
+
+{% block title %}Agregar Alojamiento - Alojamientos{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold mb-2">Agregar Alojamiento</h2>
+                        <p class="text-muted">Completa la información del alojamiento</p>
+                    </div>
+                    
+                    <form method="POST" action="/admin/accommodation/add" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nombre del Alojamiento</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-house-door"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="name" 
+                                       name="name" 
+                                       placeholder="Ej: Hotel Paradise"
+                                       required>
+                            </div>
+                            <div class="invalid-feedback">
+                                Por favor ingresa el nombre del alojamiento.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descripción</label>
+                            <textarea class="form-control" 
+                                      id="description" 
+                                      name="description" 
+                                      rows="4" 
+                                      placeholder="Describe las características del alojamiento..."
+                                      required></textarea>
+                            <div class="invalid-feedback">
+                                Por favor ingresa una descripción del alojamiento.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Ubicación</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-geo-alt"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="location" 
+                                       name="location" 
+                                       placeholder="Ej: San Salvador, El Salvador"
+                                       required>
+                            </div>
+                            <div class="invalid-feedback">
+                                Por favor ingresa la ubicación del alojamiento.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="price" class="form-label">Precio por Noche</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </span>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="price" 
+                                       name="price" 
+                                       step="0.01" 
+                                       min="0" 
+                                       placeholder="0.00"
+                                       required>
+                            </div>
+                            <div class="invalid-feedback">
+                                Por favor ingresa un precio válido.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="/admin/accommodations" class="btn btn-outline-secondary me-md-2">
+                                <i class="bi bi-arrow-left me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>Guardar Alojamiento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "layouts/simple.twig" %}
+
+{% block title %}Panel de Administración - Alojamientos{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center mb-5">
+                <h1 class="fw-bold mb-3">Panel de Administración</h1>
+                <p class="text-muted">Gestiona tu plataforma de alojamientos</p>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-house-door text-primary" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="card-title">Gestionar Alojamientos</h5>
+                            <p class="card-text text-muted">Ver, agregar, editar y eliminar alojamientos</p>
+                            <a href="/admin/accommodations" class="btn btn-primary">
+                                <i class="bi bi-list-ul me-2"></i>Ver Alojamientos
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-plus-circle text-success" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="card-title">Agregar Alojamiento</h5>
+                            <p class="card-text text-muted">Crear un nuevo alojamiento en la plataforma</p>
+                            <a href="/admin/accommodation/add" class="btn btn-success">
+                                <i class="bi bi-plus-circle me-2"></i>Agregar Nuevo
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-people text-info" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5 class="card-title">Gestionar Usuarios</h5>
+                            <p class="card-text text-muted">Administrar usuarios y permisos del sistema</p>
+                            <a href="/admin/users" class="btn btn-info">
+                                <i class="bi bi-people me-2"></i>Ver Usuarios
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-activity me-2"></i>Acciones Rápidas
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center p-3 bg-light rounded">
+                                        <i class="bi bi-house-door text-primary me-3" style="font-size: 2rem;"></i>
+                                        <div>
+                                            <h6 class="mb-1">Alojamientos</h6>
+                                            <p class="text-muted mb-0">Gestiona todos los alojamientos</p>
+                                        </div>
+                                        <a href="/admin/accommodations" class="btn btn-sm btn-outline-primary ms-auto">
+                                            Ver
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center p-3 bg-light rounded">
+                                        <i class="bi bi-plus-circle text-success me-3" style="font-size: 2rem;"></i>
+                                        <div>
+                                            <h6 class="mb-1">Agregar Alojamiento</h6>
+                                            <p class="text-muted mb-0">Crear nuevo alojamiento</p>
+                                        </div>
+                                        <a href="/admin/accommodation/add" class="btn btn-sm btn-outline-success ms-auto">
+                                            Crear
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center p-3 bg-light rounded">
+                                        <i class="bi bi-people text-info me-3" style="font-size: 2rem;"></i>
+                                        <div>
+                                            <h6 class="mb-1">Usuarios</h6>
+                                            <p class="text-muted mb-0">Gestionar usuarios del sistema</p>
+                                        </div>
+                                        <a href="/admin/users" class="btn btn-sm btn-outline-info ms-auto">
+                                            Ver
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center p-3 bg-light rounded">
+                                        <i class="bi bi-gear text-secondary me-3" style="font-size: 2rem;"></i>
+                                        <div>
+                                            <h6 class="mb-1">Configuración</h6>
+                                            <p class="text-muted mb-0">Ajustes del sistema</p>
+                                        </div>
+                                        <a href="/admin/settings" class="btn btn-sm btn-outline-secondary ms-auto">
+                                            Configurar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

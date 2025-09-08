@@ -38,6 +38,11 @@ class AccommodationService implements IAccommodationService
     /**
      * @inheritDoc
      */
+    public function getAllAccommodations(): array
+    {
+        return $this->accommodationRepository->all();
+    }
+
     public function createAccommodation(array $accommodationData, int $creatorId): Accommodation
     {
         // Verificar si el usuario tiene permiso para crear alojamientos

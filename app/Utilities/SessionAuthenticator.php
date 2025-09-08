@@ -64,6 +64,7 @@ class SessionAuthenticator implements IAuthenticator
         $_SESSION['user_email'] = $user->getEmail();
         $_SESSION['user_name'] = $user->getName();
         $_SESSION['user_role'] = $user->getRoleId();
+        $_SESSION['permissions'] = $this->userService->getUserPermissions($user->getId());
         $_SESSION['last_activity'] = time();
     }
 

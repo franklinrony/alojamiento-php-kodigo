@@ -21,6 +21,16 @@ class PermissionMiddleware implements IMiddleware
     private $permission;
 
     /**
+     * Determina si la petición es una API request
+     */
+    private function isApiRequest(): bool
+    {
+        return isset($_SERVER['HTTP_X_REQUESTED_WITH']) || 
+            strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false ||
+            strpos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== false;
+    }
+
+    /**
      * @param IUserService $userService
      * @param string $permission
      */
@@ -35,23 +45,33 @@ class PermissionMiddleware implements IMiddleware
      */
     public function handle(callable $next): void
     {
-        session_start();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
 
         if (!isset($_SESSION['user_id'])) {
-            http_response_code(401);
-            echo json_encode([
-                'error' => true,
-                'message' => 'No autorizado'
-            ]);
+            if ($this->isApiRequest()) {
+                http_response_code(401);
+                echo json_encode([
+                    'error' => true,
+                    'message' => 'No autorizado'
+                ]);
+            } else {
+                header('Location: /auth/login');
+            }
             return;
         }
 
         if (!$this->userService->hasPermission($_SESSION['user_id'], $this->permission)) {
-            http_response_code(403);
-            echo json_encode([
-                'error' => true,
-                'message' => 'No tiene permisos suficientes'
-            ]);
+            if ($this->isApiRequest()) {
+                http_response_code(403);
+                echo json_encode([
+                    'error' => true,
+                    'message' => 'No tiene permisos suficientes'
+                ]);
+            } else {
+                header('Location: /error/403');
+            }
             return;
         }
 

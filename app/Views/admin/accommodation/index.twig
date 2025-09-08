@@ -1,0 +1,101 @@
+{% extends "layouts/admin.twig" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>{{ title }}</h2>
+        </div>
+        <div class="col text-end">
+            <a href="{{ path_for('admin.accommodation.add') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Agregar Alojamiento
+            </a>
+        </div>
+    </div>
+
+    {% if flash.hasMessages('success') %}
+        <div class="alert alert-success">
+            {{ flash.getFirstMessage('success') }}
+        </div>
+    {% endif %}
+
+    {% if flash.hasMessages('error') %}
+        <div class="alert alert-danger">
+            {{ flash.getFirstMessage('error') }}
+        </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Ubicación</th>
+                            <th>Precio</th>
+                            <th>Creado por</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if accommodations|length > 0 %}
+                            {% for accommodation in accommodations %}
+                                <tr>
+                                    <td>{{ accommodation.id }}</td>
+                                    <td>{{ accommodation.name }}</td>
+                                    <td>{{ accommodation.location }}</td>
+                                    <td>${{ accommodation.price|number_format(2, '.', ',') }}</td>
+                                    <td>{{ accommodation.creator.name }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ accommodation.is_active ? 'success' : 'danger' }}">
+                                            {{ accommodation.is_active ? 'Activo' : 'Inactivo' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ path_for('admin.accommodation.edit', {'id': accommodation.id}) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ accommodation.id }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Modal de confirmación de eliminación -->
+                                <div class="modal fade" id="deleteModal{{ accommodation.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Confirmar Eliminación</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>¿Estás seguro de que deseas eliminar el alojamiento "{{ accommodation.name }}"?</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                <form action="{{ path_for('admin.accommodation.delete', {'id': accommodation.id}) }}" method="POST" class="d-inline">
+                                                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center">No hay alojamientos registrados.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

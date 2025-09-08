@@ -10,6 +10,11 @@ use App\Models\Accommodation;
 use App\Controllers\HomeController;
 use App\Controllers\AuthController;
 use App\Controllers\AccommodationController;
+use App\Controllers\RedirectController;
+use App\Controllers\TestController;
+use App\Controllers\SimpleAdminController;
+use App\Controllers\Admin\DashboardController;
+use App\Controllers\Admin\AdminAccommodationController;
 use App\Middlewares\AuthMiddleware;
 use App\Middlewares\CorsMiddleware;
 use App\Middlewares\PermissionMiddleware;
@@ -73,18 +78,23 @@ class ContainerBuilder
             ->addArgument(IUserService::class);
 
         // Configurar Twig como singleton
-        $container->addShared(\Twig\Environment::class, function () {
+        $container->addShared(\Twig\Environment::class, function () use ($container) {
             $loader = new \Twig\Loader\FilesystemLoader(PathHelper::getViewsPath());
             $twig = new \Twig\Environment($loader, [
-                'cache' => PathHelper::getCachePath() . '/twig',
-                'debug' => $_ENV['APP_DEBUG'] === 'true',
-                'auto_reload' => $_ENV['APP_DEBUG'] === 'true'
+                'cache' => false, // Deshabilitar cache para debug
+                'debug' => true,
+                'auto_reload' => true
             ]);
             
             // Si estamos en modo debug, agregar la extensión de debug de Twig
             if ($_ENV['APP_DEBUG'] === 'true') {
                 $twig->addExtension(new \Twig\Extension\DebugExtension());
             }
+
+            // Agregar nuestras extensiones personalizadas (comentado temporalmente para debug)
+            // $twig->addExtension(new TwigExtensions(
+            //     $container->get(IAuthenticator::class)
+            // ));
             
             return $twig;
         });
@@ -96,6 +106,7 @@ class ContainerBuilder
         $container->add(HomeController::class)
             ->addArguments([
                 \Twig\Environment::class,
+                IAccommodationService::class,
                 IRequestValidator::class,
                 IAuthenticator::class
             ]);
@@ -103,11 +114,10 @@ class ContainerBuilder
         // Registrar UserController
         $container->add(\App\Controllers\UserController::class)
             ->addArguments([
-                \Twig\Environment::class,
-                IRequestValidator::class,
-                IAuthenticator::class,
                 IUserService::class,
-                IRoleService::class
+                IRoleService::class,
+                IRequestValidator::class,
+                IAuthenticator::class
             ]);
 
         // Registrar AuthController
@@ -123,6 +133,37 @@ class ContainerBuilder
             ->addArgument(\Twig\Environment::class)
             ->addArgument(IRequestValidator::class)
             ->addArgument(IAuthenticator::class);
+
+        // Registrar DashboardController (Admin)
+        $container->add(DashboardController::class)
+            ->addArguments([
+                \Twig\Environment::class,
+                IRequestValidator::class,
+                IAuthenticator::class
+            ]);
+
+        // Registrar AdminAccommodationController
+        $container->add(AdminAccommodationController::class)
+            ->addArguments([
+                \Twig\Environment::class,
+                IAccommodationService::class,
+                IRequestValidator::class,
+                IAuthenticator::class
+            ]);
+
+        // Registrar RedirectController
+        $container->add(RedirectController::class)
+            ->addArguments([
+                \Twig\Environment::class,
+                IRequestValidator::class,
+                IAuthenticator::class
+            ]);
+
+        // Registrar TestController (sin dependencias)
+        $container->add(TestController::class);
+
+        // Registrar SimpleAdminController (sin dependencias)
+        $container->add(SimpleAdminController::class);
     }
 
     private static function registerMiddlewares(Container $container): void
@@ -163,7 +204,8 @@ class ContainerBuilder
             ->addArgument(IPermissionRepository::class);
         $container->add(IUserService::class, UserService::class)
             ->addArgument(IUserRepository::class)
-            ->addArgument(IRoleRepository::class);
+            ->addArgument(IRoleRepository::class)
+            ->addArgument(IPermissionRepository::class);
     }
 
     private static function registerAccommodationModule(Container $container): void

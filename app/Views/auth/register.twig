@@ -1,92 +1,123 @@
-{% extends "layouts/main.twig" %}
+{% extends "layouts/simple.twig" %}
 
-{% block title %}Registro - {{ parent() }}{% endblock %}
+{% block title %}Registro - Alojamientos{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Crear Cuenta</h4>
-            </div>
-            <div class="card-body">
-                <form action="/auth/register" method="POST" class="needs-validation" novalidate>
-                    <div class="mb-3">
-                        <label for="name" class="form-label">Nombre Completo</label>
-                        <input type="text" 
-                               class="form-control" 
-                               id="name" 
-                               name="name" 
-                               required 
-                               autofocus>
-                        <div class="invalid-feedback">
-                            Por favor ingresa tu nombre completo.
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold mb-2">Crear Cuenta</h2>
+                        <p class="text-muted">Únete a nuestra comunidad</p>
+                    </div>
+                    
+                    <form action="/auth/register" method="POST" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nombre Completo</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-person"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="name" 
+                                       name="name" 
+                                       placeholder="Tu nombre completo"
+                                       required 
+                                       autofocus>
+                            </div>
+                            <div class="invalid-feedback">
+                                Por favor ingresa tu nombre completo.
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Correo Electrónico</label>
-                        <input type="email" 
-                               class="form-control" 
-                               id="email" 
-                               name="email" 
-                               required>
-                        <div class="invalid-feedback">
-                            Por favor ingresa un correo electrónico válido.
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Correo Electrónico</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-envelope"></i>
+                                </span>
+                                <input type="email" 
+                                       class="form-control" 
+                                       id="email" 
+                                       name="email" 
+                                       placeholder="tu@email.com"
+                                       required>
+                            </div>
+                            <div class="invalid-feedback">
+                                Por favor ingresa un correo electrónico válido.
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Contraseña</label>
-                        <input type="password" 
-                               class="form-control" 
-                               id="password" 
-                               name="password" 
-                               required 
-                               pattern=".{6,}"
-                               title="La contraseña debe tener al menos 6 caracteres">
-                        <div class="invalid-feedback">
-                            La contraseña debe tener al menos 6 caracteres.
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Contraseña</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-lock"></i>
+                                </span>
+                                <input type="password" 
+                                       class="form-control" 
+                                       id="password" 
+                                       name="password" 
+                                       placeholder="Mínimo 6 caracteres"
+                                       required 
+                                       pattern=".{6,}"
+                                       title="La contraseña debe tener al menos 6 caracteres">
+                            </div>
+                            <div class="invalid-feedback">
+                                La contraseña debe tener al menos 6 caracteres.
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label for="passwordConfirm" class="form-label">Confirmar Contraseña</label>
-                        <input type="password" 
-                               class="form-control" 
-                               id="passwordConfirm" 
-                               name="passwordConfirm" 
-                               required>
-                        <div class="invalid-feedback">
-                            Las contraseñas deben coincidir.
+                        <div class="mb-3">
+                            <label for="passwordConfirm" class="form-label">Confirmar Contraseña</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-lock-fill"></i>
+                                </span>
+                                <input type="password" 
+                                       class="form-control" 
+                                       id="passwordConfirm" 
+                                       name="passwordConfirm" 
+                                       placeholder="Confirma tu contraseña"
+                                       required>
+                            </div>
+                            <div class="invalid-feedback">
+                                Las contraseñas deben coincidir.
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" 
-                               class="form-check-input" 
-                               id="terms" 
-                               name="terms" 
-                               required>
-                        <label class="form-check-label" for="terms">
-                            Acepto los términos y condiciones
-                        </label>
-                        <div class="invalid-feedback">
-                            Debes aceptar los términos y condiciones para registrarte.
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" 
+                                   class="form-check-input" 
+                                   id="terms" 
+                                   name="terms" 
+                                   required>
+                            <label class="form-check-label" for="terms">
+                                Acepto los <a href="#" class="text-decoration-none">términos y condiciones</a>
+                            </label>
+                            <div class="invalid-feedback">
+                                Debes aceptar los términos y condiciones para registrarte.
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">
-                            Crear Cuenta
-                        </button>
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-person-plus me-2"></i>Crear Cuenta
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center">
+                        <p class="mb-0 text-muted">¿Ya tienes una cuenta? 
+                            <a href="/auth/login" class="text-decoration-none">
+                                Inicia sesión aquí
+                            </a>
+                        </p>
                     </div>
-                </form>
-            </div>
-            <div class="card-footer text-center">
-                <p class="mb-0">¿Ya tienes una cuenta? 
-                    <a href="/auth/login">Inicia sesión aquí</a>
-                </p>
+                </div>
             </div>
         </div>
     </div>
