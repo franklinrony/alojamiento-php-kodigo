@@ -163,4 +163,19 @@ class SessionAuthenticator implements IAuthenticator
             return null;
         }
     }
+
+    /**
+     * Verifica si el usuario autenticado tiene un permiso específico
+     *
+     * @param string $permissionName
+     * @return bool
+     */
+    public function hasPermission(string $permissionName): bool
+    {
+        if (!$this->isAuthenticated()) {
+            return false;
+        }
+
+        return $this->userService->hasPermission($_SESSION['user_id'], $permissionName);
+    }
 }

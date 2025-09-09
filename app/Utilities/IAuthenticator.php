@@ -49,4 +49,12 @@ interface IAuthenticator
      * @return array|null
      */
     public function getAuthenticatedUser(): ?array;
+
+    /**
+     * Verifica si el usuario autenticado tiene un permiso específico
+     *
+     * @param string $permissionName
+     * @return bool
+     */
+    public function hasPermission(string $permissionName): bool;
 }

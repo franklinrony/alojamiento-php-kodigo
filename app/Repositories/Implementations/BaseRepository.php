@@ -53,8 +53,15 @@ abstract class BaseRepository implements IRepository
                 ]
             );
         } catch (PDOException $e) {
-            // TODO: Implement proper error logging
-            throw new \RuntimeException("Error de conexión a la base de datos: " . $e->getMessage());
+            // Log del error para debugging
+            error_log("Error de conexión a la base de datos: " . $e->getMessage());
+            
+            // Crear una excepción más específica
+            throw new \App\Exceptions\DatabaseConnectionException(
+                "No se puede conectar a la base de datos. Verifica que el servidor de base de datos esté ejecutándose y que las credenciales sean correctas.",
+                $e->getCode(),
+                $e
+            );
         }
     }
 

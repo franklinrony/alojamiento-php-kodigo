@@ -230,36 +230,20 @@ class AuthController extends BaseController
     public function logout(): void
     {
         if (!$this->isMethod('POST')) {
-            if ($this->isApiRequest()) {
-                $this->error('Método no permitido', 405);
-            } else {
-                $this->flash('error', 'Método no permitido');
-                header('Location: /');
-            }
-            return;
-        }
-
-        if (!$this->authenticator->isAuthenticated()) {
-            if ($this->isApiRequest()) {
-                $this->error('No hay sesión activa', 400);
-            } else {
-                $this->flash('error', 'No hay sesión activa');
-                header('Location: /');
-            }
-            return;
-        }
-
-        $this->authenticator->logout();
-        
-        if ($this->isApiRequest()) {
-            $this->jsonResponse([
-                'success' => true,
-                'message' => 'Sesión cerrada exitosamente'
-            ]);
-        } else {
-            $this->flash('success', '¡Hasta pronto!');
+            $this->flash('error', 'Método no permitido');
             header('Location: /');
             exit;
         }
+
+        if (!$this->authenticator->isAuthenticated()) {
+            $this->flash('error', 'No hay sesión activa');
+            header('Location: /');
+            exit;
+        }
+
+        $this->authenticator->logout();
+        $this->flash('success', '¡Hasta pronto!');
+        header('Location: /');
+        exit;
     }
 }

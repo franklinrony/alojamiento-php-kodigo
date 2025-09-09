@@ -1,0 +1,1 @@
+'Has manage-accommodations permission: ' . (\$userService-, 'manage-accommodations') ? 'YES' : 'NO') . PHP_EOL;

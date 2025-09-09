@@ -1,0 +1,88 @@
+{% extends "layouts/admin.twig" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Gestionar Alojamientos</h1>
+                <a href="/admin/accommodations/create" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Nuevo Alojamiento
+                </a>
+            </div>
+
+            {% if flash.success %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ flash.success[0] }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endif %}
+
+            {% if flash.error %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ flash.error[0] }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endif %}
+
+            {% if accommodations %}
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre</th>
+                                        <th>Ubicación</th>
+                                        <th>Precio</th>
+                                        <th>Creado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for accommodation in accommodations %}
+                                    <tr>
+                                        <td>{{ accommodation.id }}</td>
+                                        <td>
+                                            <strong>{{ accommodation.name }}</strong>
+                                            {% if accommodation.description %}
+                                                <br><small class="text-muted">{{ accommodation.description|slice(0, 50) }}{% if accommodation.description|length > 50 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ accommodation.location }}</td>
+                                        <td>${{ accommodation.price|number_format(2) }}</td>
+                                        <td>{{ accommodation.created_at|date('d/m/Y') }}</td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="/accommodations/{{ accommodation.id }}" class="btn btn-sm btn-outline-info" title="Ver">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="/admin/accommodations/{{ accommodation.id }}/edit" class="btn btn-sm btn-outline-warning" title="Editar">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-house-door display-1 text-muted"></i>
+                        <h3 class="mt-3">No hay alojamientos</h3>
+                        <p class="text-muted">Aún no se han creado alojamientos en el sistema.</p>
+                        <a href="/admin/accommodations/create" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Crear Primer Alojamiento
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

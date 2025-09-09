@@ -36,11 +36,39 @@ try {
         error_log("Reutilizando instancia existente del Router");
     }
     $routerInstance->dispatch();
+} catch (\App\Exceptions\DatabaseConnectionException $e) {
+    error_log("Error de conexión a la base de datos: " . $e->getMessage());
+    
+    if (\App\Utilities\ErrorRenderer::isApiRequest()) {
+        // Para peticiones API, devolver JSON
+        \App\Utilities\ErrorRenderer::renderJsonError(
+            'Servicio temporalmente no disponible. Error de conexión a la base de datos.',
+            503
+        );
+    } else {
+        // Para peticiones web, mostrar una página de error específica para BD
+        \App\Utilities\ErrorRenderer::renderErrorPage($container, 'errors/database.twig', [
+            'pageTitle' => 'Error de Conexión',
+            'error' => $e->getMessage(),
+            'debug' => $_ENV['APP_DEBUG'] ?? false
+        ]);
+    }
 } catch (\Exception $e) {
     error_log("Error en la aplicación: " . $e->getMessage());
-    http_response_code(500);
-    echo json_encode([
-        'error' => true,
-        'message' => $_ENV['APP_DEBUG'] ? $e->getMessage() : 'Internal Server Error'
-    ]);
+    
+    if (\App\Utilities\ErrorRenderer::isApiRequest()) {
+        // Para peticiones API, devolver JSON
+        \App\Utilities\ErrorRenderer::renderJsonError(
+            $_ENV['APP_DEBUG'] ? $e->getMessage() : 'Internal Server Error',
+            500
+        );
+    } else {
+        // Para peticiones web, mostrar una página de error
+        \App\Utilities\ErrorRenderer::renderErrorPage($container, 'errors/500.twig', [
+            'pageTitle' => 'Error del Servidor',
+            'error' => $_ENV['APP_DEBUG'] ? $e->getMessage() : 'Ha ocurrido un error interno del servidor',
+            'debug' => $_ENV['APP_DEBUG'] ?? false
+        ]);
+    }
 }
+

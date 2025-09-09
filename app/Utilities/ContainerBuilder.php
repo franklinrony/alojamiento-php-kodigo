@@ -91,10 +91,10 @@ class ContainerBuilder
                 $twig->addExtension(new \Twig\Extension\DebugExtension());
             }
 
-            // Agregar nuestras extensiones personalizadas (comentado temporalmente para debug)
-            // $twig->addExtension(new TwigExtensions(
-            //     $container->get(IAuthenticator::class)
-            // ));
+            // Agregar nuestras extensiones personalizadas
+            $twig->addExtension(new TwigExtensions(
+                $container->get(IAuthenticator::class)
+            ));
             
             return $twig;
         });
@@ -142,13 +142,23 @@ class ContainerBuilder
                 IAuthenticator::class
             ]);
 
-        // Registrar AdminAccommodationController
+        // Registrar AdminAccommodationController (controlador anterior)
         $container->add(AdminAccommodationController::class)
             ->addArguments([
                 \Twig\Environment::class,
                 IAccommodationService::class,
                 IRequestValidator::class,
                 IAuthenticator::class
+            ]);
+
+        // Registrar AdminAccommodationControllerNew (nuevo controlador)
+        $container->add('App\Controllers\Admin\AccommodationController')
+            ->addArguments([
+                \Twig\Environment::class,
+                IRequestValidator::class,
+                IAuthenticator::class,
+                IAccommodationService::class,
+                IUserService::class
             ]);
 
         // Registrar RedirectController

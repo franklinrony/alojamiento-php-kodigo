@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Services\IAccommodationService;
+use App\Utilities\IRequestValidator;
+use App\Utilities\IAuthenticator;
 
 /**
  * Class AccommodationController
@@ -16,10 +18,18 @@ class AccommodationController extends BaseController
     private $accommodationService;
 
     /**
+     * @param \Twig\Environment $twig
      * @param IAccommodationService $accommodationService
+     * @param IRequestValidator|null $validator
+     * @param IAuthenticator|null $authenticator
      */
-    public function __construct(IAccommodationService $accommodationService)
-    {
+    public function __construct(
+        \Twig\Environment $twig,
+        IAccommodationService $accommodationService,
+        ?IRequestValidator $validator = null,
+        ?IAuthenticator $authenticator = null
+    ) {
+        parent::__construct($twig, $validator, $authenticator);
         $this->accommodationService = $accommodationService;
     }
 
@@ -44,29 +54,53 @@ class AccommodationController extends BaseController
         }
 
         $accommodations = $this->accommodationService->searchAccommodations($criteria);
-        $this->jsonResponse(['accommodations' => $accommodations]);
+        
+        $this->render('accommodations/index.twig', [
+            'pageTitle' => 'Alojamientos Disponibles',
+            'accommodations' => $accommodations,
+            'filters' => $criteria
+        ]);
     }
 
     /**
-     * Crea un nuevo alojamiento
+     * Muestra el formulario para crear un nuevo alojamiento
      */
     public function create(): void
     {
         if (!$this->isAuthenticated()) {
-            $this->error('No autorizado', 401);
-            return;
+            $this->flash('error', 'Debes iniciar sesión para crear un alojamiento');
+            header('Location: /auth/login');
+            exit;
+        }
+
+        $this->render('accommodations/create.twig', [
+            'pageTitle' => 'Crear Nuevo Alojamiento'
+        ]);
+    }
+
+    /**
+     * Procesa la creación de un nuevo alojamiento
+     */
+    public function store(): void
+    {
+        if (!$this->isAuthenticated()) {
+            $this->flash('error', 'No autorizado');
+            header('Location: /auth/login');
+            exit;
         }
 
         if (!$this->isMethod('POST')) {
-            $this->error('Método no permitido', 405);
-            return;
+            $this->flash('error', 'Método no permitido');
+            header('Location: /accommodations/create');
+            exit;
         }
 
-        $data = $this->getJsonRequest();
+        $data = $_POST;
         
         if (!isset($data['name']) || !isset($data['location']) || !isset($data['price'])) {
-            $this->error('Datos incompletos');
-            return;
+            $this->flash('error', 'Datos incompletos');
+            header('Location: /accommodations/create');
+            exit;
         }
 
         try {
@@ -75,34 +109,71 @@ class AccommodationController extends BaseController
                 $this->getAuthUserId()
             );
 
-            $this->jsonResponse([
-                'message' => 'Alojamiento creado exitosamente',
-                'accommodation' => $accommodation
-            ], 201);
+            $this->flash('success', 'Alojamiento creado exitosamente');
+            header('Location: /accommodations/' . $accommodation->getId());
+            exit;
         } catch (\RuntimeException $e) {
-            $this->error($e->getMessage());
+            $this->flash('error', $e->getMessage());
+            header('Location: /accommodations/create');
+            exit;
         }
     }
 
     /**
-     * Actualiza un alojamiento existente
+     * Muestra el formulario para editar un alojamiento
+     *
+     * @param int $id
+     */
+    public function edit(int $id): void
+    {
+        if (!$this->isAuthenticated()) {
+            $this->flash('error', 'No autorizado');
+            header('Location: /auth/login');
+            exit;
+        }
+
+        $accommodation = $this->accommodationService->getAccommodation($id);
+
+        if (!$accommodation) {
+            $this->flash('error', 'Alojamiento no encontrado');
+            header('Location: /accommodations');
+            exit;
+        }
+
+        // Verificar que el usuario es el propietario
+        if ($accommodation->getCreatedBy() !== $this->getAuthUserId()) {
+            $this->flash('error', 'No tienes permisos para editar este alojamiento');
+            header('Location: /accommodations');
+            exit;
+        }
+
+        $this->render('accommodations/edit.twig', [
+            'pageTitle' => 'Editar Alojamiento',
+            'accommodation' => $accommodation
+        ]);
+    }
+
+    /**
+     * Procesa la actualización de un alojamiento existente
      *
      * @param int $id
      */
     public function update(int $id): void
     {
         if (!$this->isAuthenticated()) {
-            $this->error('No autorizado', 401);
-            return;
+            $this->flash('error', 'No autorizado');
+            header('Location: /auth/login');
+            exit;
         }
 
-        if (!$this->isMethod('PUT')) {
-            $this->error('Método no permitido', 405);
-            return;
+        if (!$this->isMethod('POST')) {
+            $this->flash('error', 'Método no permitido');
+            header('Location: /accommodations/' . $id . '/edit');
+            exit;
         }
 
         try {
-            $data = $this->getJsonRequest();
+            $data = $_POST;
             $accommodation = $this->accommodationService->updateAccommodation(
                 $id,
                 $data,
@@ -110,57 +181,24 @@ class AccommodationController extends BaseController
             );
 
             if (!$accommodation) {
-                $this->error('Alojamiento no encontrado', 404);
-                return;
+                $this->flash('error', 'Alojamiento no encontrado');
+                header('Location: /accommodations');
+                exit;
             }
 
-            $this->jsonResponse([
-                'message' => 'Alojamiento actualizado exitosamente',
-                'accommodation' => $accommodation
-            ]);
+            $this->flash('success', 'Alojamiento actualizado exitosamente');
+            header('Location: /accommodations/' . $id);
+            exit;
         } catch (\RuntimeException $e) {
-            $this->error($e->getMessage(), 403);
+            $this->flash('error', $e->getMessage());
+            header('Location: /accommodations/' . $id . '/edit');
+            exit;
         }
     }
 
-    /**
-     * Elimina un alojamiento
-     *
-     * @param int $id
-     */
-    public function delete(int $id): void
-    {
-        if (!$this->isAuthenticated()) {
-            $this->error('No autorizado', 401);
-            return;
-        }
-
-        if (!$this->isMethod('DELETE')) {
-            $this->error('Método no permitido', 405);
-            return;
-        }
-
-        try {
-            $success = $this->accommodationService->deleteAccommodation(
-                $id,
-                $this->getAuthUserId()
-            );
-
-            if (!$success) {
-                $this->error('Error al eliminar el alojamiento', 400);
-                return;
-            }
-
-            $this->jsonResponse([
-                'message' => 'Alojamiento eliminado exitosamente'
-            ]);
-        } catch (\RuntimeException $e) {
-            $this->error($e->getMessage(), 403);
-        }
-    }
 
     /**
-     * Obtiene un alojamiento específico
+     * Muestra un alojamiento específico
      *
      * @param int $id
      */
@@ -169,10 +207,14 @@ class AccommodationController extends BaseController
         $accommodation = $this->accommodationService->getAccommodation($id);
 
         if (!$accommodation) {
-            $this->error('Alojamiento no encontrado', 404);
-            return;
+            $this->flash('error', 'Alojamiento no encontrado');
+            header('Location: /accommodations');
+            exit;
         }
 
-        $this->jsonResponse(['accommodation' => $accommodation]);
+        $this->render('accommodations/show.twig', [
+            'pageTitle' => $accommodation->getName(),
+            'accommodation' => $accommodation
+        ]);
     }
 }

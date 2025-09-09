@@ -61,6 +61,9 @@ abstract class BaseController implements IController
             'user' => $user
         ]);
         
+        // También pasar user directamente para compatibilidad con layouts que usan 'user'
+        $this->twig->addGlobal('user', $user);
+        
         // Configurar variable flash messages si existen en la sesión
         $flash = $_SESSION['flash_messages'] ?? [];
         unset($_SESSION['flash_messages']);

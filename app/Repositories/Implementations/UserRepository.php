@@ -3,6 +3,7 @@
 namespace App\Repositories\Implementations;
 
 use App\Models\User;
+use App\Models\Role;
 use App\Repositories\IUserRepository;
 
 /**
@@ -32,7 +33,9 @@ class UserRepository extends BaseRepository implements IUserRepository
             return null;
         }
 
-        return $this->mapToModel($result);
+        $user = $this->mapToModel($result);
+        $this->loadUserRole($user);
+        return $user;
     }
 
     /**
@@ -56,5 +59,42 @@ class UserRepository extends BaseRepository implements IUserRepository
         $stmt->execute(['email' => $email]);
         
         return (int) $stmt->fetchColumn() > 0;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function find($id)
+    {
+        $user = parent::find($id);
+        if ($user) {
+            $this->loadUserRole($user);
+        }
+        return $user;
+    }
+
+    /**
+     * Carga la información del rol del usuario
+     *
+     * @param User $user
+     * @return void
+     */
+    private function loadUserRole(User $user): void
+    {
+        if (!$user->getRoleId()) {
+            return;
+        }
+
+        $stmt = $this->db->prepare("SELECT * FROM roles WHERE id = :role_id");
+        $stmt->execute(['role_id' => $user->getRoleId()]);
+        
+        $roleData = $stmt->fetch();
+        if ($roleData) {
+            $role = new Role();
+            $role->setId($roleData['id']);
+            $role->setName($roleData['name']);
+            $role->setDescription($roleData['description'] ?? null);
+            $user->setRole($role);
+        }
     }
 }
