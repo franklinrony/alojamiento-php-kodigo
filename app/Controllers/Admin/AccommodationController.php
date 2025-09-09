@@ -100,9 +100,18 @@ class AccommodationController extends BaseController
 
         try {
             $accommodations = $this->accommodationService->getAllAccommodations();
+            
+            // Calcular precio promedio
+            $averagePrice = 0;
+            if (!empty($accommodations)) {
+                $totalPrice = array_sum(array_map(function($acc) { return $acc->getPrice(); }, $accommodations));
+                $averagePrice = $totalPrice / count($accommodations);
+            }
+            
             $this->render('admin/accommodations/index.twig', [
                 'pageTitle' => 'Gestionar Alojamientos - Admin',
-                'accommodations' => $accommodations
+                'accommodations' => $accommodations,
+                'averagePrice' => $averagePrice
             ]);
         } catch (\Exception $e) {
             $this->flash('error', 'Error al obtener los alojamientos: ' . $e->getMessage());
