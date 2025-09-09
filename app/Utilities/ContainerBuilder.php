@@ -129,8 +129,8 @@ class ContainerBuilder
 
         // Registrar AccommodationController
         $container->add(AccommodationController::class)
-            ->addArgument(IAccommodationService::class)
             ->addArgument(\Twig\Environment::class)
+            ->addArgument(IAccommodationService::class)
             ->addArgument(IRequestValidator::class)
             ->addArgument(IAuthenticator::class);
 
