@@ -7,11 +7,12 @@ use App\Models\User;
 use App\Models\Role;
 use App\Models\Permission;
 use App\Models\Accommodation;
+use App\Models\Reservation;
 use App\Controllers\HomeController;
 use App\Controllers\AuthController;
 use App\Controllers\AccommodationController;
 use App\Controllers\RedirectController;
-use App\Controllers\TestController;
+// use App\Controllers\TestController; // No existe
 use App\Controllers\SimpleAdminController;
 use App\Controllers\Admin\DashboardController;
 use App\Controllers\Admin\AdminAccommodationController;
@@ -23,18 +24,24 @@ use App\Repositories\Implementations\UserRepository;
 use App\Repositories\Implementations\RoleRepository;
 use App\Repositories\Implementations\PermissionRepository;
 use App\Repositories\Implementations\AccommodationRepository;
+use App\Repositories\Implementations\ReservationRepository;
 use App\Services\Implementations\UserService;
 use App\Services\Implementations\RoleService;
 use App\Services\Implementations\PermissionService;
 use App\Services\Implementations\AccommodationService;
+use App\Services\Implementations\ReservationService;
+use App\Services\Implementations\LoggerService;
 use App\Services\IUserService;
 use App\Services\IRoleService;
 use App\Services\IPermissionService;
 use App\Services\IAccommodationService;
+use App\Services\IReservationService;
+use App\Services\ILoggerService;
 use App\Repositories\IUserRepository;
 use App\Repositories\IRoleRepository;
 use App\Repositories\IPermissionRepository;
 use App\Repositories\IAccommodationRepository;
+use App\Repositories\IReservationRepository;
 
 class ContainerBuilder
 {
@@ -56,10 +63,14 @@ class ContainerBuilder
 
         // Registrar utilidades base
         self::registerBaseUtilities($container);
+        
+        // Registrar servicios base
+        self::registerBaseServices($container);
 
         // Registrar módulos según se necesiten
         self::registerAuthModule($container);
         self::registerAccommodationModule($container);
+        self::registerReservationModule($container);
         
         // Registrar controladores y middlewares
         self::registerControllers($container);
@@ -114,8 +125,11 @@ class ContainerBuilder
         // Registrar UserController
         $container->add(\App\Controllers\UserController::class)
             ->addArguments([
+                \Twig\Environment::class,
                 IUserService::class,
                 IRoleService::class,
+                IReservationService::class,
+                IAccommodationService::class,
                 IRequestValidator::class,
                 IAuthenticator::class
             ]);
@@ -169,8 +183,8 @@ class ContainerBuilder
                 IAuthenticator::class
             ]);
 
-        // Registrar TestController (sin dependencias)
-        $container->add(TestController::class);
+        // Registrar TestController (sin dependencias) - comentado porque no existe
+        // $container->add(TestController::class);
 
         // Registrar SimpleAdminController (sin dependencias)
         $container->add(SimpleAdminController::class);
@@ -231,5 +245,27 @@ class ContainerBuilder
         $container->add(IAccommodationService::class, AccommodationService::class)
             ->addArgument(IAccommodationRepository::class)
             ->addArgument(IUserService::class);
+    }
+
+    private static function registerReservationModule(Container $container): void
+    {
+        // Modelo de reserva
+        $container->addShared(Reservation::class);
+
+        // Repositorio de reserva
+        $container->add(IReservationRepository::class, ReservationRepository::class)
+            ->addArgument(Reservation::class);
+
+        // Servicio de reserva
+        $container->add(IReservationService::class, ReservationService::class)
+            ->addArgument(IReservationRepository::class)
+            ->addArgument(IAccommodationRepository::class)
+            ->addArgument(ILoggerService::class);
+    }
+
+    private static function registerBaseServices(Container $container): void
+    {
+        // Registrar servicio de logging
+        $container->addShared(ILoggerService::class, LoggerService::class);
     }
 }

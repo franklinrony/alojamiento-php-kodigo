@@ -15,6 +15,12 @@ $dotenv->load();
 error_reporting(E_ALL);
 ini_set('display_errors', $_ENV['APP_DEBUG'] ?? '0');
 
+// Configurar sesión
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+ini_set('session.cookie_secure', 0); // Cambiar a 1 en producción con HTTPS
+ini_set('session.cookie_samesite', 'Lax');
+
 // Iniciar sesión
 session_start();
 

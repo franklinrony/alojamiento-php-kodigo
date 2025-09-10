@@ -1,0 +1,147 @@
+{% extends "layouts/main.twig" %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Detalles de Reserva #{{ reservation.id }}</h4>
+                    <span class="badge 
+                        {% if reservation.status == 'active' %}bg-success
+                        {% elseif reservation.status == 'cancelled' %}bg-danger
+                        {% else %}bg-secondary{% endif %} fs-6">
+                        {% if reservation.status == 'active' %}Activa
+                        {% elseif reservation.status == 'cancelled' %}Cancelada
+                        {% else %}Completada{% endif %}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="text-primary">Información del Alojamiento</h5>
+                            <div class="mb-3">
+                                <strong>Nombre:</strong> {{ reservation.accommodation.name }}<br>
+                                <strong>Ubicación:</strong> {{ reservation.accommodation.location }}<br>
+                                <strong>Precio por noche:</strong> ${{ reservation.accommodation.price|number_format(2) }}
+                            </div>
+
+                            <h5 class="text-primary">Detalles de la Reserva</h5>
+                            <div class="mb-3">
+                                <strong>Fecha de entrada:</strong> {{ reservation.check_in_date|date('d/m/Y') }}<br>
+                                <strong>Fecha de salida:</strong> {{ reservation.check_out_date|date('d/m/Y') }}<br>
+                                <strong>Número de noches:</strong> {{ reservation.nights }}<br>
+                                <strong>Número de huéspedes:</strong> {{ reservation.guests }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary">Información de Pago</h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Precio por noche:</span>
+                                        <span>${{ reservation.accommodation.price|number_format(2) }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Número de noches:</span>
+                                        <span>{{ reservation.nights }}</span>
+                                    </div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between">
+                                        <strong>Total:</strong>
+                                        <strong class="text-primary">${{ reservation.total_price|number_format(2) }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="text-primary mt-4">Información Adicional</h5>
+                            <div class="mb-3">
+                                <strong>Reserva creada:</strong> {{ reservation.created_at|date('d/m/Y H:i') }}<br>
+                                {% if reservation.updated_at and reservation.updated_at != reservation.created_at %}
+                                <strong>Última actualización:</strong> {{ reservation.updated_at|date('d/m/Y H:i') }}<br>
+                                {% endif %}
+                                {% if reservation.special_requests %}
+                                <strong>Solicitudes especiales:</strong><br>
+                                <div class="alert alert-info mt-2">{{ reservation.special_requests }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Políticas de cancelación -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> Políticas de Cancelación</h6>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="mb-0">
+                                        <li>Cancelación gratuita hasta 24 horas antes del check-in</li>
+                                        <li>Cancelación con cargo del 50% entre 24 y 12 horas antes del check-in</li>
+                                        <li>No se permite cancelación menos de 12 horas antes del check-in</li>
+                                        <li>Las cancelaciones se procesan inmediatamente</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="/user/reservations" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Volver a Reservas
+                                </a>
+                                <div>
+                                    {% if reservation.status == 'active' %}
+                                    <form method="POST" action="/user/reservations/cancel" class="d-inline">
+                                        <input type="hidden" name="reservation_id" value="{{ reservation.id }}">
+                                        <button type="submit" class="btn btn-danger" 
+                                                onclick="return confirm('¿Estás seguro de que quieres cancelar esta reserva? Esta acción no se puede deshacer.')">
+                                            <i class="fas fa-times"></i> Cancelar Reserva
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    <a href="/accommodations/{{ reservation.accommodation.id }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i> Ver Alojamiento
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de contacto -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-phone"></i> Información de Contacto</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Para cambios en tu reserva:</h6>
+                            <p class="mb-0">
+                                <i class="fas fa-envelope"></i> reservas@alojamientos.com<br>
+                                <i class="fas fa-phone"></i> +1 (555) 123-4567
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Horario de atención:</h6>
+                            <p class="mb-0">
+                                Lunes a Viernes: 9:00 AM - 6:00 PM<br>
+                                Sábados: 10:00 AM - 4:00 PM<br>
+                                Domingos: Cerrado
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

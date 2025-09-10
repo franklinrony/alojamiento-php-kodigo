@@ -19,6 +19,14 @@ return function (RouteCollector $r) {
     $r->get('/profile', ['App\Controllers\UserController', 'profile', 'middleware' => ['auth']]);
     $r->post('/profile', ['App\Controllers\UserController', 'updateProfile', 'middleware' => ['auth']]);
 
+    // Rutas de reservas
+    $r->get('/user/reservations', ['App\Controllers\UserController', 'reservations', 'middleware' => ['auth']]);
+    $r->get('/user/reservations/active', ['App\Controllers\UserController', 'activeReservations', 'middleware' => ['auth']]);
+    $r->get('/user/reservations/create', ['App\Controllers\UserController', 'createReservationForm', 'middleware' => ['auth']]);
+    $r->post('/user/reservations/create', ['App\Controllers\UserController', 'createReservation', 'middleware' => ['auth']]);
+    $r->post('/user/reservations/cancel', ['App\Controllers\UserController', 'cancelReservation', 'middleware' => ['auth']]);
+    $r->get('/user/reservations/{id:\d+}', ['App\Controllers\UserController', 'reservationDetails', 'middleware' => ['auth']]);
+
     // Rutas de alojamientos (usuarios)
     $r->get('/accommodations', ['App\Controllers\AccommodationController', 'index']);
     $r->get('/accommodations/{id:\d+}', ['App\Controllers\AccommodationController', 'show']);

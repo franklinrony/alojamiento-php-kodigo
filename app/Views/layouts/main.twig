@@ -24,21 +24,27 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/accommodations">
+                            <i class="bi bi-house me-1"></i>
+                            Alojamientos
+                        </a>
+                    </li>
+                </ul>
                 <ul class="navbar-nav ms-auto">
                     {% if auth.isAuthenticated %}
-                        {% if auth.hasPermission('access-admin') %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="/admin">
-                                    <i class="bi bi-speedometer2 me-1"></i>
-                                    Panel de Administración
-                                </a>
-                            </li>
-                        {% endif %}
                         <li class="nav-item">
                             <span class="nav-link">
                                 <i class="bi bi-person-circle me-1"></i>
                                 {{ auth.user.name }}
                             </span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/user/reservations">
+                                <i class="bi bi-calendar-check me-1"></i>
+                                Mis Reservas
+                            </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/profile">

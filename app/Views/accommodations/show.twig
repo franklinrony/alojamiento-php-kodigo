@@ -56,6 +56,18 @@
                                     <i class="bi bi-arrow-left me-2"></i>Volver a la Lista
                                 </a>
                                 
+                                <div class="btn-group">
+                                    {% if auth.user %}
+                                        <a href="{{ path_for('/user/reservations/create') }}?accommodation_id={{ accommodation.id }}" class="btn btn-primary">
+                                            <i class="bi bi-calendar-plus me-2"></i>Reservar
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ path_for('/auth/login') }}" class="btn btn-primary">
+                                            <i class="bi bi-person-plus me-2"></i>Iniciar Sesión para Reservar
+                                        </a>
+                                    {% endif %}
+                                </div>
+                                
                                 {% if auth.user and auth.user.id == accommodation.created_by %}
                                     <div class="btn-group">
                                         <a href="{{ path_for('/accommodations/' ~ accommodation.id ~ '/edit') }}" class="btn btn-warning">

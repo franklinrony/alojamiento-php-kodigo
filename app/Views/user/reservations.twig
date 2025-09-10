@@ -1,0 +1,247 @@
+{% extends "layouts/main.twig" %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">{{ pageTitle }}</h1>
+                <a href="/user/reservations/create" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Nueva Reserva
+                </a>
+            </div>
+
+            <!-- Estadísticas -->
+            {% if stats %}
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ stats.total_reservations }}</h4>
+                                    <p class="card-text">Total Reservas</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-calendar-alt fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ stats.active_reservations }}</h4>
+                                    <p class="card-text">Activas</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-check-circle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">{{ stats.completed_reservations }}</h4>
+                                    <p class="card-text">Completadas</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-flag-checkered fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">${{ stats.total_spent_all|number_format(2) }}</h4>
+                                    <p class="card-text">Total Gastado</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-dollar-sign fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Filtros -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <select class="form-select" id="statusFilter">
+                                <option value="">Todos los estados</option>
+                                <option value="active">Activas</option>
+                                <option value="cancelled">Canceladas</option>
+                                <option value="completed">Completadas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" id="searchInput" placeholder="Buscar por alojamiento...">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="dateFilter" placeholder="Filtrar por fecha">
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                                <i class="fas fa-times"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de reservas -->
+            {% if reservations %}
+            <div class="row" id="reservationsList">
+                {% for reservation in reservations %}
+                <div class="col-md-6 col-lg-4 mb-4 reservation-item" 
+                     data-status="{{ reservation.status }}" 
+                     data-accommodation="{{ reservation.accommodation.name|lower }}"
+                     data-date="{{ reservation.check_in_date }}">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="badge 
+                                {% if reservation.status == 'active' %}bg-success
+                                {% elseif reservation.status == 'cancelled' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {% if reservation.status == 'active' %}Activa
+                                {% elseif reservation.status == 'cancelled' %}Cancelada
+                                {% else %}Completada{% endif %}
+                            </span>
+                            <small class="text-muted">#{{ reservation.id }}</small>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ reservation.accommodation.name }}</h5>
+                            <p class="card-text text-muted">{{ reservation.accommodation.location }}</p>
+                            
+                            <div class="mb-3">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted">Check-in</small>
+                                        <div class="fw-bold">{{ reservation.check_in_date|date('d/m/Y') }}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Check-out</small>
+                                        <div class="fw-bold">{{ reservation.check_out_date|date('d/m/Y') }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted">Huéspedes</small>
+                                        <div class="fw-bold">{{ reservation.guests }}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Noches</small>
+                                        <div class="fw-bold">{{ reservation.nights }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">Total</small>
+                                    <div class="h5 text-primary mb-0">${{ reservation.total_price|number_format(2) }}</div>
+                                </div>
+                                <div>
+                                    <small class="text-muted">Creada</small>
+                                    <div class="small">{{ reservation.created_at|date('d/m/Y') }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between">
+                                <a href="/user/reservations/details?id={{ reservation.id }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i> Ver Detalles
+                                </a>
+                                {% if reservation.status == 'active' %}
+                                <form method="POST" action="/user/reservations/cancel" class="d-inline">
+                                    <input type="hidden" name="reservation_id" value="{{ reservation.id }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                            onclick="return confirm('¿Estás seguro de que quieres cancelar esta reserva?')">
+                                        <i class="fas fa-times"></i> Cancelar
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No tienes reservas</h4>
+                <p class="text-muted">Comienza explorando nuestros alojamientos disponibles</p>
+                <a href="/" class="btn btn-primary">Explorar Alojamientos</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Filtros de reservas
+document.getElementById('statusFilter').addEventListener('change', filterReservations);
+document.getElementById('searchInput').addEventListener('input', filterReservations);
+document.getElementById('dateFilter').addEventListener('change', filterReservations);
+
+function filterReservations() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+    const dateFilter = document.getElementById('dateFilter').value;
+    const reservations = document.querySelectorAll('.reservation-item');
+
+    reservations.forEach(reservation => {
+        const status = reservation.dataset.status;
+        const accommodation = reservation.dataset.accommodation;
+        const date = reservation.dataset.date;
+
+        let show = true;
+
+        // Filtro por estado
+        if (statusFilter && status !== statusFilter) {
+            show = false;
+        }
+
+        // Filtro por búsqueda
+        if (searchInput && !accommodation.includes(searchInput)) {
+            show = false;
+        }
+
+        // Filtro por fecha
+        if (dateFilter && date !== dateFilter) {
+            show = false;
+        }
+
+        reservation.style.display = show ? 'block' : 'none';
+    });
+}
+
+function clearFilters() {
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('dateFilter').value = '';
+    filterReservations();
+}
+</script>
+{% endblock %}
