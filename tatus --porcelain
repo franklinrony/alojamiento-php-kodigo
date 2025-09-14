@@ -1,0 +1,41 @@
+[1mdiff --git a/app/Controllers/BaseController.php b/app/Controllers/BaseController.php[m
+[1mindex 9bd6b21..0a6f9a6 100644[m
+[1m--- a/app/Controllers/BaseController.php[m
+[1m+++ b/app/Controllers/BaseController.php[m
+[36m@@ -57,24 +57,31 @@[m [mabstract class BaseController implements IController[m
+                 $container = \App\Utilities\DiContainer::getInstance();[m
+                 $logger = $container->get(\App\Services\ILoggerService::class);[m
+                 $logger->debug("Auth status check", [[m
+[32m+[m[32m                    'authenticator_is_null' => $this->authenticator === null,[m
+                     'is_authenticated' => $isAuthenticated,[m
+                     'session_status' => session_status(),[m
+                     'session_id' => session_id(),[m
+[31m-                    'user_in_session' => $_SESSION['user_id'] ?? 'none'[m
+[32m+[m[32m                    'user_in_session' => $_SESSION['user_id'] ?? 'none',[m
+[32m+[m[32m                    'user_role_in_session' => $_SESSION['user_role'] ?? 'none',[m
+[32m+[m[32m                    'permissions_in_session' => $_SESSION['permissions'] ?? [][m
+                 ]);[m
+             } catch (\Exception $logError) {[m
+                 // Fallback silencioso para evitar errores en el logging[m
+             }[m
+         }[m
+         [m
+[31m-        $this->twig->addGlobal('auth', [[m
+[31m-            'isAuthenticated' => $isAuthenticated,[m
+[31m-            'user' => $user[m
+[31m-        ]);[m
+[32m+[m[32m        // Pasar el authenticator completo para que tenga acceso a hasPermission[m
+[32m+[m[32m        $this->twig->addGlobal('auth', $this->authenticator);[m
+         [m
+         // También pasar user directamente para compatibilidad con layouts que usan 'user'[m
+         $this->twig->addGlobal('user', $user);[m
+         [m
+[32m+[m[32m        // Generar token CSRF para formularios[m
+[32m+[m[32m        if (!isset($_SESSION['csrf_token'])) {[m
+[32m+[m[32m            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));[m
+[32m+[m[32m        }[m
+[32m+[m[32m        $this->twig->addGlobal('csrf_token', $_SESSION['csrf_token']);[m
+[32m+[m[41m        [m
+         // Configurar variable flash messages si existen en la sesión[m
+         $flash = $_SESSION['flash_messages'] ?? [];[m
+         unset($_SESSION['flash_messages']);[m

@@ -57,23 +57,30 @@ abstract class BaseController implements IController
                 $container = \App\Utilities\DiContainer::getInstance();
                 $logger = $container->get(\App\Services\ILoggerService::class);
                 $logger->debug("Auth status check", [
+                    'authenticator_is_null' => $this->authenticator === null,
                     'is_authenticated' => $isAuthenticated,
                     'session_status' => session_status(),
                     'session_id' => session_id(),
-                    'user_in_session' => $_SESSION['user_id'] ?? 'none'
+                    'user_in_session' => $_SESSION['user_id'] ?? 'none',
+                    'user_role_in_session' => $_SESSION['user_role'] ?? 'none',
+                    'permissions_in_session' => $_SESSION['permissions'] ?? []
                 ]);
             } catch (\Exception $logError) {
                 // Fallback silencioso para evitar errores en el logging
             }
         }
         
-        $this->twig->addGlobal('auth', [
-            'isAuthenticated' => $isAuthenticated,
-            'user' => $user
-        ]);
+        // Pasar el authenticator completo para que tenga acceso a hasPermission
+        $this->twig->addGlobal('auth', $this->authenticator);
         
         // También pasar user directamente para compatibilidad con layouts que usan 'user'
         $this->twig->addGlobal('user', $user);
+        
+        // Generar token CSRF para formularios
+        if (!isset($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        $this->twig->addGlobal('csrf_token', $_SESSION['csrf_token']);
         
         // Configurar variable flash messages si existen en la sesión
         $flash = $_SESSION['flash_messages'] ?? [];
