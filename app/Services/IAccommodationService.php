@@ -79,4 +79,12 @@ interface IAccommodationService
      * @return Accommodation|null
      */
     public function getAccommodation(int $id): ?Accommodation;
+
+    /**
+     * Cuenta el total de alojamientos que coinciden con los criterios
+     *
+     * @param array $criteria
+     * @return int
+     */
+    public function countAccommodations(array $criteria): int;
 }

@@ -203,6 +203,14 @@ class DiConfig
                     \DI\get(\App\Utilities\IRequestValidator::class),
                     \DI\get(\App\Utilities\IAuthenticator::class)
                 ),
+            \App\Controllers\Admin\AccommodationController::class => \DI\create()
+                ->constructor(
+                    \DI\get(Environment::class),
+                    \DI\get(\App\Utilities\IRequestValidator::class),
+                    \DI\get(\App\Utilities\IAuthenticator::class),
+                    \DI\get(\App\Services\IAccommodationService::class),
+                    \DI\get(\App\Services\IUserService::class)
+                ),
 
             // ===== MIDDLEWARES =====
             CorsMiddleware::class => \DI\create(),

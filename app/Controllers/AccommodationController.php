@@ -34,7 +34,7 @@ class AccommodationController extends BaseController
     }
 
     /**
-     * Lista todos los alojamientos con filtros opcionales
+     * Lista todos los alojamientos con filtros opcionales y paginación
      */
     public function index(): void
     {
@@ -53,12 +53,32 @@ class AccommodationController extends BaseController
             $criteria['maxPrice'] = (float) $maxPrice;
         }
 
+        // Paginación
+        $page = (int) ($this->getParam('page') ?? 1);
+        $limit = 12; // 12 alojamientos por página
+        $offset = ($page - 1) * $limit;
+
+        $criteria['limit'] = $limit;
+        $criteria['offset'] = $offset;
+
         $accommodations = $this->accommodationService->searchAccommodations($criteria);
+        
+        // Obtener total para paginación
+        $totalAccommodations = $this->accommodationService->countAccommodations($criteria);
+        $totalPages = ceil($totalAccommodations / $limit);
         
         $this->render('accommodations/index.twig', [
             'pageTitle' => 'Alojamientos Disponibles',
             'accommodations' => $accommodations,
-            'filters' => $criteria
+            'filters' => $criteria,
+            'pagination' => [
+                'current_page' => $page,
+                'total_pages' => $totalPages,
+                'total_items' => $totalAccommodations,
+                'items_per_page' => $limit,
+                'has_previous' => $page > 1,
+                'has_next' => $page < $totalPages
+            ]
         ]);
     }
 

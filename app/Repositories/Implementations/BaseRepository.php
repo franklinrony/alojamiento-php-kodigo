@@ -103,13 +103,43 @@ abstract class BaseRepository implements IRepository
     /**
      * @inheritDoc
      */
-    public function all()
+    public function all(?int $limit = null, ?int $offset = null)
     {
         $table = $this->getTableName();
-        $stmt = $this->db->query("SELECT * FROM $table");
-        $results = $stmt->fetchAll();
+        $sql = "SELECT * FROM $table";
+        
+        if ($limit !== null) {
+            $sql .= " LIMIT :limit";
+            if ($offset !== null) {
+                $sql .= " OFFSET :offset";
+            }
+        }
+        
+        try {
+            $stmt = $this->db->prepare($sql);
+            
+            if ($limit !== null) {
+                $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+                if ($offset !== null) {
+                    $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+                }
+            }
+            
+            $stmt->execute();
+            
+            $results = $stmt->fetchAll();
 
-        return array_map([$this, 'mapToModel'], $results);
+            return array_map([$this, 'mapToModel'], $results);
+        } catch (\PDOException $e) {
+            $this->logDatabaseError("Error en consulta all()", [
+                'sql' => $sql,
+                'limit' => $limit,
+                'offset' => $offset,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode()
+            ]);
+            throw $e;
+        }
     }
 
     /**
@@ -202,8 +232,8 @@ abstract class BaseRepository implements IRepository
         // Usar el método fill para asignar las propiedades
         $model->fill($data);
 
-        // Log para depuración usando el sistema de logging
-        if (class_exists('\App\Services\ILoggerService')) {
+        // Log para depuración SOLO en modo debug y para errores
+        if ($_ENV['APP_DEBUG'] === 'true' && class_exists('\App\Services\ILoggerService')) {
             try {
                 $container = \App\Utilities\DiContainer::getInstance();
                 if ($container->has(\App\Services\ILoggerService::class)) {

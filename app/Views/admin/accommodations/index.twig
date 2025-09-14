@@ -1,4 +1,4 @@
-{% extends "layouts/main.twig" %}
+{% extends "layouts/admin.twig" %}
 
 {% block content %}
 <div class="container mt-4">
@@ -14,7 +14,7 @@
                             <i class="bi bi-house-door display-1 text-primary mb-3"></i>
                             <h5 class="card-title">Total Alojamientos</h5>
                             <p class="display-4">{{ accommodations|length }}</p>
-                            <a href="{{ path_for('/admin/accommodations') }}" class="btn btn-primary">Ver Todos</a>
+                            <a href="/admin/accommodations" class="btn btn-primary">Ver Todos</a>
                         </div>
                     </div>
                 </div>
@@ -24,7 +24,7 @@
                             <i class="bi bi-plus-circle display-1 text-success mb-3"></i>
                             <h5 class="card-title">Agregar Alojamiento</h5>
                             <p class="text-muted">Crear un nuevo alojamiento en la plataforma</p>
-                            <a href="{{ path_for('/admin/accommodations/create') }}" class="btn btn-success">Agregar Nuevo</a>
+                            <a href="/admin/accommodations/create" class="btn btn-success">Agregar Nuevo</a>
                         </div>
                     </div>
                 </div>
@@ -34,7 +34,7 @@
                             <i class="bi bi-currency-dollar display-1 text-info mb-3"></i>
                             <h5 class="card-title">Precio Promedio</h5>
                             <p class="display-4">${{ averagePrice|number_format(0) }}</p>
-                            <a href="{{ path_for('/admin/accommodations') }}" class="btn btn-info">Ver Detalles</a>
+                            <a href="/admin/accommodations" class="btn btn-info">Ver Detalles</a>
                         </div>
                     </div>
                 </div>
@@ -88,10 +88,10 @@
                                         <td>{{ accommodation.created_at|date('d/m/Y') }}</td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <a href="{{ path_for('/accommodations/' ~ accommodation.id) }}" class="btn btn-sm btn-outline-info" title="Ver">
+                                                <a href="/accommodations/{{ accommodation.id }}" class="btn btn-sm btn-outline-info" title="Ver">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
-                                                <a href="{{ path_for('/admin/accommodations/' ~ accommodation.id ~ '/edit') }}" class="btn btn-sm btn-outline-warning" title="Editar">
+                                                <a href="/admin/accommodations/{{ accommodation.id }}/edit" class="btn btn-sm btn-outline-warning" title="Editar">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
                                             </div>
@@ -106,7 +106,7 @@
                             <i class="bi bi-house-door display-1 text-muted"></i>
                             <h3 class="mt-3">No hay alojamientos</h3>
                             <p class="text-muted">Aún no se han creado alojamientos en el sistema.</p>
-                            <a href="{{ path_for('/admin/accommodations/create') }}" class="btn btn-primary">
+                            <a href="/admin/accommodations/create" class="btn btn-primary">
                                 <i class="bi bi-plus-circle me-2"></i>Crear Primer Alojamiento
                             </a>
                         </div>

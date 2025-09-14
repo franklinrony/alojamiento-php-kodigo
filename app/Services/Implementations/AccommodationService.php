@@ -87,17 +87,48 @@ class AccommodationService implements IAccommodationService
         if (isset($criteria['minPrice']) && isset($criteria['maxPrice'])) {
             return $this->accommodationRepository->findByPriceRange(
                 (float) $criteria['minPrice'],
-                (float) $criteria['maxPrice']
+                (float) $criteria['maxPrice'],
+                $criteria['limit'] ?? null,
+                $criteria['offset'] ?? null
             );
         }
 
         // Buscar por ubicación si se especifica
         if (isset($criteria['location'])) {
-            return $this->accommodationRepository->findByLocation($criteria['location']);
+            return $this->accommodationRepository->findByLocation(
+                $criteria['location'],
+                $criteria['limit'] ?? null,
+                $criteria['offset'] ?? null
+            );
         }
 
-        // Si no hay criterios específicos, devolver todos
-        return $this->accommodationRepository->all();
+        // Si no hay criterios específicos, devolver con paginación
+        return $this->accommodationRepository->all(
+            $criteria['limit'] ?? null,
+            $criteria['offset'] ?? null
+        );
+    }
+
+    /**
+     * Cuenta el total de alojamientos que coinciden con los criterios
+     */
+    public function countAccommodations(array $criteria): int
+    {
+        // Contar por rango de precios si se especifica
+        if (isset($criteria['minPrice']) && isset($criteria['maxPrice'])) {
+            return $this->accommodationRepository->countByPriceRange(
+                (float) $criteria['minPrice'],
+                (float) $criteria['maxPrice']
+            );
+        }
+
+        // Contar por ubicación si se especifica
+        if (isset($criteria['location'])) {
+            return $this->accommodationRepository->countByLocation($criteria['location']);
+        }
+
+        // Contar todos
+        return $this->accommodationRepository->count();
     }
 
     /**
