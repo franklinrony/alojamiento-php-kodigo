@@ -51,10 +51,21 @@ abstract class BaseController implements IController
         $user = $this->authenticator ? $this->authenticator->getUser() : null;
         
         // Debug info
-        error_log('Auth Status: ' . ($isAuthenticated ? 'true' : 'false'));
-        error_log('Session Status: ' . session_status());
-        error_log('Session ID: ' . session_id());
-        error_log('User in Session: ' . (isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 'none'));
+        // Log de autenticación usando el sistema de logging (solo en modo debug)
+        if ($_ENV['APP_DEBUG'] === 'true' && class_exists('\App\Services\ILoggerService')) {
+            try {
+                $container = \App\Utilities\DiContainer::getInstance();
+                $logger = $container->get(\App\Services\ILoggerService::class);
+                $logger->debug("Auth status check", [
+                    'is_authenticated' => $isAuthenticated,
+                    'session_status' => session_status(),
+                    'session_id' => session_id(),
+                    'user_in_session' => $_SESSION['user_id'] ?? 'none'
+                ]);
+            } catch (\Exception $logError) {
+                // Fallback silencioso para evitar errores en el logging
+            }
+        }
         
         $this->twig->addGlobal('auth', [
             'isAuthenticated' => $isAuthenticated,

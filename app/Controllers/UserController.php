@@ -6,6 +6,7 @@ use App\Services\IUserService;
 use App\Services\IRoleService;
 use App\Services\IReservationService;
 use App\Services\IAccommodationService;
+use App\Services\ILoggerService;
 use App\Utilities\IRequestValidator;
 use App\Utilities\IAuthenticator;
 
@@ -35,6 +36,10 @@ class UserController extends BaseController
      */
     private $accommodationService;
 
+    /**
+     * @var ILoggerService
+     */
+    private $logger;
 
     /**
      * @param \Twig\Environment $twig
@@ -44,6 +49,7 @@ class UserController extends BaseController
      * @param IAccommodationService $accommodationService
      * @param IRequestValidator $validator
      * @param IAuthenticator $authenticator
+     * @param ILoggerService $logger
      */
     public function __construct(
         \Twig\Environment $twig,
@@ -52,13 +58,15 @@ class UserController extends BaseController
         IReservationService $reservationService,
         IAccommodationService $accommodationService,
         IRequestValidator $validator,
-        IAuthenticator $authenticator
+        IAuthenticator $authenticator,
+        ILoggerService $logger
     ) {
         parent::__construct($twig, $validator, $authenticator);
         $this->userService = $userService;
         $this->roleService = $roleService;
         $this->reservationService = $reservationService;
         $this->accommodationService = $accommodationService;
+        $this->logger = $logger;
     }
 
     /**
@@ -266,15 +274,43 @@ class UserController extends BaseController
             exit;
         }
 
-        $userId = $this->authenticator->getUserId();
-        $reservations = $this->reservationService->getReservationsByUser($userId);
-        $stats = $this->reservationService->getReservationStats($userId);
+        try {
+            $userId = $this->authenticator->getUserId();
+            
+            // Obtener las reservas con manejo de errores
+            try {
+                $reservations = $this->reservationService->getReservationsByUser($userId);
+            } catch (\Exception $e) {
+                $this->logger->error("Error al obtener reservas: " . $e->getMessage());
+                $reservations = [];
+            }
+            
+            // Obtener las estadísticas con manejo de errores
+            try {
+                $stats = $this->reservationService->getReservationStats($userId);
+            } catch (\Exception $e) {
+                $this->logger->error("Error al obtener estadísticas: " . $e->getMessage());
+                $stats = [
+                    'total_reservations' => 0,
+                    'active_reservations' => 0,
+                    'cancelled_reservations' => 0,
+                    'completed_reservations' => 0,
+                    'total_spent_active' => 0,
+                    'total_spent_all' => 0
+                ];
+            }
 
-        $this->render('user/reservations.twig', [
-            'pageTitle' => 'Mis Reservas',
-            'reservations' => $reservations,
-            'stats' => $stats
-        ]);
+            $this->render('user/reservations.twig', [
+                'pageTitle' => 'Mis Reservas',
+                'reservations' => $reservations,
+                'stats' => $stats
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error("Error general en reservations: " . $e->getMessage());
+            $this->flash('error', 'Ha ocurrido un error al cargar las reservas. Por favor, inténtelo de nuevo.');
+            header('Location: /');
+            exit;
+        }
     }
 
     /**

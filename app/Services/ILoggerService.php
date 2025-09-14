@@ -45,6 +45,24 @@ interface ILoggerService
     public function debug(string $message, array $context = []): void;
 
     /**
+     * Registra un mensaje crítico
+     *
+     * @param string $message
+     * @param array $context
+     * @return void
+     */
+    public function critical(string $message, array $context = []): void;
+
+    /**
+     * Registra un mensaje de emergencia
+     *
+     * @param string $message
+     * @param array $context
+     * @return void
+     */
+    public function emergency(string $message, array $context = []): void;
+
+    /**
      * Registra una actividad de usuario
      *
      * @param int $userId
@@ -64,4 +82,42 @@ interface ILoggerService
      * @return void
      */
     public function logReservationActivity(int $userId, int $reservationId, string $action, array $details = []): void;
+
+    /**
+     * Registra un error de base de datos
+     *
+     * @param string $message
+     * @param array $context
+     * @return void
+     */
+    public function logDatabaseError(string $message, array $context = []): void;
+
+    /**
+     * Registra un evento de seguridad
+     *
+     * @param string $message
+     * @param array $context
+     * @return void
+     */
+    public function logSecurityEvent(string $message, array $context = []): void;
+
+    /**
+     * Registra una actividad de API
+     *
+     * @param string $endpoint
+     * @param string $method
+     * @param int $statusCode
+     * @param array $context
+     * @return void
+     */
+    public function logApiActivity(string $endpoint, string $method, int $statusCode, array $context = []): void;
+
+    /**
+     * Registra una excepción completa
+     *
+     * @param \Throwable $exception
+     * @param array $context
+     * @return void
+     */
+    public function logException(\Throwable $exception, array $context = []): void;
 }

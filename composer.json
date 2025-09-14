@@ -5,7 +5,8 @@
         "robmorgan/phinx": "^0.16.10",
         "twig/twig": "^3.21",
         "nikic/fast-route": "^1.3",
-        "league/container": "^4.2"
+        "league/container": "^4.2",
+        "php-di/php-di": "^7.1"
     },
     "autoload": {
         "psr-4": {

@@ -50,7 +50,10 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             
             return $this->hydrateModels($results);
         } catch (PDOException $e) {
-            error_log("Error finding reservations by user ID: " . $e->getMessage());
+            $this->logDatabaseError("Error finding reservations by user ID", [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
             return [];
         }
     }
@@ -79,7 +82,10 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             
             return $this->hydrateModels($results);
         } catch (PDOException $e) {
-            error_log("Error finding reservations by accommodation ID: " . $e->getMessage());
+            $this->logDatabaseError("Error finding reservations by accommodation ID", [
+                'accommodation_id' => $accommodationId,
+                'error' => $e->getMessage()
+            ]);
             return [];
         }
     }
@@ -108,7 +114,10 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             
             return $this->hydrateModels($results);
         } catch (PDOException $e) {
-            error_log("Error finding active reservations by user ID: " . $e->getMessage());
+            $this->logDatabaseError("Error finding active reservations by user ID", [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
             return [];
         }
     }
@@ -153,7 +162,11 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             
             return $this->hydrateModels($results);
         } catch (PDOException $e) {
-            error_log("Error finding reservations by date range: " . $e->getMessage());
+            $this->logDatabaseError("Error finding reservations by date range", [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'error' => $e->getMessage()
+            ]);
             return [];
         }
     }
@@ -195,7 +208,12 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             
             return (int) $result['count'] > 0;
         } catch (PDOException $e) {
-            error_log("Error checking date conflict: " . $e->getMessage());
+            $this->logDatabaseError("Error checking date conflict", [
+                'accommodation_id' => $accommodationId,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'error' => $e->getMessage()
+            ]);
             return true; // En caso de error, asumir que hay conflicto por seguridad
         }
     }
@@ -224,7 +242,10 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             
             return $this->hydrateModels($results);
         } catch (PDOException $e) {
-            error_log("Error finding reservations by status: " . $e->getMessage());
+            $this->logDatabaseError("Error finding reservations by status", [
+                'status' => $status,
+                'error' => $e->getMessage()
+            ]);
             return [];
         }
     }
@@ -241,11 +262,11 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             $stmt = $this->db->prepare("
                 SELECT 
                     COUNT(*) as total_reservations,
-                    SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_reservations,
-                    SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_reservations,
-                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_reservations,
-                    SUM(CASE WHEN status = 'active' THEN total_price ELSE 0 END) as total_spent_active,
-                    SUM(total_price) as total_spent_all
+                    COALESCE(SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END), 0) as active_reservations,
+                    COALESCE(SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END), 0) as cancelled_reservations,
+                    COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) as completed_reservations,
+                    COALESCE(SUM(CASE WHEN status = 'active' THEN total_price ELSE 0 END), 0) as total_spent_active,
+                    COALESCE(SUM(total_price), 0) as total_spent_all
                 FROM {$this->table}
                 WHERE user_id = ?
             ");
@@ -262,7 +283,10 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
                 'total_spent_all' => (float) $result['total_spent_all']
             ];
         } catch (PDOException $e) {
-            error_log("Error getting reservation stats by user ID: " . $e->getMessage());
+            $this->logDatabaseError("Error getting reservation stats by user ID", [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
             return [
                 'total_reservations' => 0,
                 'active_reservations' => 0,

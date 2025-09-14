@@ -91,7 +91,22 @@ class User extends Model
             $this->setPasswordHash(password_hash($password, PASSWORD_DEFAULT));
         }
         
-        error_log("Password establecido: " . substr($this->password, 0, 10) . "...");
+        // Log de password usando el sistema de logging
+        if (class_exists('\App\Services\ILoggerService')) {
+            try {
+                $container = \App\Utilities\DiContainer::getInstance();
+                if ($container->has(\App\Services\ILoggerService::class)) {
+                    $logger = $container->get(\App\Services\ILoggerService::class);
+                    $logger->debug("Password establecido para usuario", [
+                        'user_id' => $this->id,
+                        'email' => $this->email,
+                        'password_hash_preview' => substr($this->password, 0, 10) . '...'
+                    ]);
+                }
+            } catch (\Exception $logError) {
+                // Fallback silencioso
+            }
+        }
     }
 
     /**
@@ -103,13 +118,42 @@ class User extends Model
     public function verifyPassword(string $password): bool
     {
         if (empty($this->password)) {
-            error_log("Error: Hash de contraseña vacío para el usuario " . $this->email);
+            // Log de error usando el sistema de logging
+            if (class_exists('\App\Services\ILoggerService')) {
+                try {
+                    $container = \App\Utilities\DiContainer::getInstance();
+                    if ($container->has(\App\Services\ILoggerService::class)) {
+                        $logger = $container->get(\App\Services\ILoggerService::class);
+                        $logger->error("Hash de contraseña vacío para usuario", [
+                            'user_id' => $this->id,
+                            'email' => $this->email
+                        ]);
+                    }
+                } catch (\Exception $logError) {
+                    // Fallback silencioso
+                }
+            }
             return false;
         }
 
         $result = password_verify($password, $this->password);
         if (!$result) {
-            error_log("Verificación de contraseña fallida para el usuario " . $this->email);
+            // Log de verificación fallida usando el sistema de logging
+            if (class_exists('\App\Services\ILoggerService')) {
+                try {
+                    $container = \App\Utilities\DiContainer::getInstance();
+                    if ($container->has(\App\Services\ILoggerService::class)) {
+                        $logger = $container->get(\App\Services\ILoggerService::class);
+                        $logger->warning("Verificación de contraseña fallida", [
+                            'user_id' => $this->id,
+                            'email' => $this->email,
+                            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+                        ]);
+                    }
+                } catch (\Exception $logError) {
+                    // Fallback silencioso
+                }
+            }
         }
         return $result;
     }

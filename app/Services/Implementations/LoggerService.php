@@ -3,6 +3,7 @@
 namespace App\Services\Implementations;
 
 use App\Services\ILoggerService;
+use App\Config\LoggingConfig;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\RotatingFileHandler;
@@ -10,10 +11,12 @@ use Monolog\Formatter\LineFormatter;
 use Monolog\Processor\UidProcessor;
 use Monolog\Processor\WebProcessor;
 use Monolog\Processor\MemoryUsageProcessor;
+use Monolog\Processor\IntrospectionProcessor;
 
 /**
  * Class LoggerService
  * Implementación del servicio de logging usando Monolog
+ * Solo escribe a archivos, no a consola
  */
 class LoggerService implements ILoggerService
 {
@@ -33,11 +36,34 @@ class LoggerService implements ILoggerService
     private $reservationLogger;
 
     /**
+     * @var Logger
+     */
+    private $databaseLogger;
+
+    /**
+     * @var Logger
+     */
+    private $securityLogger;
+
+    /**
+     * @var Logger
+     */
+    private $apiLogger;
+
+    /**
+     * @var bool
+     */
+    private $loggingEnabled;
+
+    /**
      * Constructor
      */
     public function __construct()
     {
-        $this->initializeLoggers();
+        $this->loggingEnabled = LoggingConfig::isLoggingEnabled();
+        if ($this->loggingEnabled) {
+            $this->initializeLoggers();
+        }
     }
 
     /**
@@ -56,6 +82,18 @@ class LoggerService implements ILoggerService
         // Logger específico para actividades de reservas
         $this->reservationLogger = new Logger('reservations');
         $this->setupReservationLogger();
+
+        // Logger específico para base de datos
+        $this->databaseLogger = new Logger('database');
+        $this->setupDatabaseLogger();
+
+        // Logger específico para seguridad
+        $this->securityLogger = new Logger('security');
+        $this->setupSecurityLogger();
+
+        // Logger específico para API
+        $this->apiLogger = new Logger('api');
+        $this->setupApiLogger();
     }
 
     /**
@@ -65,21 +103,21 @@ class LoggerService implements ILoggerService
     {
         // Handler para archivo principal con rotación
         $mainHandler = new RotatingFileHandler(
-            __DIR__ . '/../../../var/logs/app.log',
-            30, // Mantener 30 días
-            Logger::DEBUG
+            LoggingConfig::getLogFilePath('app'),
+            LoggingConfig::ROTATION_DAYS['app'],
+            LoggingConfig::getLogLevel()
         );
 
         // Handler para errores críticos
         $errorHandler = new StreamHandler(
-            __DIR__ . '/../../../var/logs/error.log',
+            LoggingConfig::getLogFilePath('error'),
             Logger::ERROR
         );
 
         // Formateador personalizado
         $formatter = new LineFormatter(
-            "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n",
-            'Y-m-d H:i:s'
+            LoggingConfig::getMessageFormat(),
+            LoggingConfig::getDateFormat()
         );
 
         $mainHandler->setFormatter($formatter);
@@ -88,10 +126,13 @@ class LoggerService implements ILoggerService
         $this->logger->pushHandler($mainHandler);
         $this->logger->pushHandler($errorHandler);
 
-        // Procesadores adicionales
-        $this->logger->pushProcessor(new UidProcessor());
-        $this->logger->pushProcessor(new WebProcessor());
-        $this->logger->pushProcessor(new MemoryUsageProcessor());
+        // Procesadores adicionales - SOLO EN MODO DEBUG para evitar memory leaks
+        if ($_ENV['APP_DEBUG'] === 'true') {
+            $this->logger->pushProcessor(new UidProcessor());
+            $this->logger->pushProcessor(new WebProcessor());
+            $this->logger->pushProcessor(new MemoryUsageProcessor());
+            $this->logger->pushProcessor(new IntrospectionProcessor());
+        }
     }
 
     /**
@@ -100,14 +141,14 @@ class LoggerService implements ILoggerService
     private function setupUserActivityLogger(): void
     {
         $handler = new RotatingFileHandler(
-            __DIR__ . '/../../../var/logs/user_activity.log',
-            90, // Mantener 90 días para actividades de usuario
+            LoggingConfig::getLogFilePath('user_activity'),
+            LoggingConfig::ROTATION_DAYS['user_activity'],
             Logger::INFO
         );
 
         $formatter = new LineFormatter(
             "[%datetime%] USER_ACTIVITY: %message% %context%\n",
-            'Y-m-d H:i:s'
+            LoggingConfig::getDateFormat()
         );
 
         $handler->setFormatter($formatter);
@@ -120,18 +161,78 @@ class LoggerService implements ILoggerService
     private function setupReservationLogger(): void
     {
         $handler = new RotatingFileHandler(
-            __DIR__ . '/../../../var/logs/reservations.log',
-            365, // Mantener 1 año para reservas
+            LoggingConfig::getLogFilePath('reservations'),
+            LoggingConfig::ROTATION_DAYS['reservations'],
             Logger::INFO
         );
 
         $formatter = new LineFormatter(
             "[%datetime%] RESERVATION: %message% %context%\n",
-            'Y-m-d H:i:s'
+            LoggingConfig::getDateFormat()
         );
 
         $handler->setFormatter($formatter);
         $this->reservationLogger->pushHandler($handler);
+    }
+
+    /**
+     * Configura el logger de base de datos
+     */
+    private function setupDatabaseLogger(): void
+    {
+        $handler = new RotatingFileHandler(
+            LoggingConfig::getLogFilePath('database'),
+            LoggingConfig::ROTATION_DAYS['database'],
+            Logger::WARNING
+        );
+
+        $formatter = new LineFormatter(
+            "[%datetime%] DATABASE: %message% %context%\n",
+            LoggingConfig::getDateFormat()
+        );
+
+        $handler->setFormatter($formatter);
+        $this->databaseLogger->pushHandler($handler);
+    }
+
+    /**
+     * Configura el logger de seguridad
+     */
+    private function setupSecurityLogger(): void
+    {
+        $handler = new RotatingFileHandler(
+            LoggingConfig::getLogFilePath('security'),
+            LoggingConfig::ROTATION_DAYS['security'],
+            Logger::WARNING
+        );
+
+        $formatter = new LineFormatter(
+            "[%datetime%] SECURITY: %message% %context%\n",
+            LoggingConfig::getDateFormat()
+        );
+
+        $handler->setFormatter($formatter);
+        $this->securityLogger->pushHandler($handler);
+    }
+
+    /**
+     * Configura el logger de API
+     */
+    private function setupApiLogger(): void
+    {
+        $handler = new RotatingFileHandler(
+            LoggingConfig::getLogFilePath('api'),
+            LoggingConfig::ROTATION_DAYS['api'],
+            Logger::INFO
+        );
+
+        $formatter = new LineFormatter(
+            "[%datetime%] API: %message% %context%\n",
+            LoggingConfig::getDateFormat()
+        );
+
+        $handler->setFormatter($formatter);
+        $this->apiLogger->pushHandler($handler);
     }
 
     /**
@@ -143,7 +244,9 @@ class LoggerService implements ILoggerService
      */
     public function info(string $message, array $context = []): void
     {
-        $this->logger->info($message, $context);
+        if ($this->loggingEnabled && $this->logger) {
+            $this->logger->info($message, $context);
+        }
     }
 
     /**
@@ -155,7 +258,9 @@ class LoggerService implements ILoggerService
      */
     public function warning(string $message, array $context = []): void
     {
-        $this->logger->warning($message, $context);
+        if ($this->loggingEnabled && $this->logger) {
+            $this->logger->warning($message, $context);
+        }
     }
 
     /**
@@ -167,7 +272,9 @@ class LoggerService implements ILoggerService
      */
     public function error(string $message, array $context = []): void
     {
-        $this->logger->error($message, $context);
+        if ($this->loggingEnabled && $this->logger) {
+            $this->logger->error($message, $context);
+        }
     }
 
     /**
@@ -179,7 +286,37 @@ class LoggerService implements ILoggerService
      */
     public function debug(string $message, array $context = []): void
     {
-        $this->logger->debug($message, $context);
+        if ($this->loggingEnabled && $this->logger) {
+            $this->logger->debug($message, $context);
+        }
+    }
+
+    /**
+     * Registra un mensaje crítico
+     *
+     * @param string $message
+     * @param array $context
+     * @return void
+     */
+    public function critical(string $message, array $context = []): void
+    {
+        if ($this->loggingEnabled && $this->logger) {
+            $this->logger->critical($message, $context);
+        }
+    }
+
+    /**
+     * Registra un mensaje de emergencia
+     *
+     * @param string $message
+     * @param array $context
+     * @return void
+     */
+    public function emergency(string $message, array $context = []): void
+    {
+        if ($this->loggingEnabled && $this->logger) {
+            $this->logger->emergency($message, $context);
+        }
     }
 
     /**
@@ -192,6 +329,10 @@ class LoggerService implements ILoggerService
      */
     public function logUserActivity(int $userId, string $action, array $details = []): void
     {
+        if (!$this->loggingEnabled) {
+            return;
+        }
+
         $context = [
             'user_id' => $userId,
             'action' => $action,
@@ -202,8 +343,12 @@ class LoggerService implements ILoggerService
 
         $message = "User {$userId} performed action: {$action}";
         
-        $this->userActivityLogger->info($message, $context);
-        $this->logger->info($message, $context);
+        if ($this->userActivityLogger) {
+            $this->userActivityLogger->info($message, $context);
+        }
+        if ($this->logger) {
+            $this->logger->info($message, $context);
+        }
     }
 
     /**
@@ -217,6 +362,10 @@ class LoggerService implements ILoggerService
      */
     public function logReservationActivity(int $userId, int $reservationId, string $action, array $details = []): void
     {
+        if (!$this->loggingEnabled) {
+            return;
+        }
+
         $context = [
             'user_id' => $userId,
             'reservation_id' => $reservationId,
@@ -229,7 +378,120 @@ class LoggerService implements ILoggerService
 
         $message = "Reservation {$reservationId}: User {$userId} performed action: {$action}";
         
-        $this->reservationLogger->info($message, $context);
-        $this->logger->info($message, $context);
+        if ($this->reservationLogger) {
+            $this->reservationLogger->info($message, $context);
+        }
+        if ($this->logger) {
+            $this->logger->info($message, $context);
+        }
+    }
+
+    /**
+     * Registra un error de base de datos
+     *
+     * @param string $message
+     * @param array $context
+     * @return void
+     */
+    public function logDatabaseError(string $message, array $context = []): void
+    {
+        if (!$this->loggingEnabled) {
+            return;
+        }
+
+        $context['type'] = 'database_error';
+        $context['timestamp'] = date('Y-m-d H:i:s');
+        
+        if ($this->databaseLogger) {
+            $this->databaseLogger->error($message, $context);
+        }
+        if ($this->logger) {
+            $this->logger->error($message, $context);
+        }
+    }
+
+    /**
+     * Registra un evento de seguridad
+     *
+     * @param string $message
+     * @param array $context
+     * @return void
+     */
+    public function logSecurityEvent(string $message, array $context = []): void
+    {
+        if (!$this->loggingEnabled) {
+            return;
+        }
+
+        $context['type'] = 'security_event';
+        $context['ip_address'] = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $context['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+        $context['timestamp'] = date('Y-m-d H:i:s');
+        
+        if ($this->securityLogger) {
+            $this->securityLogger->warning($message, $context);
+        }
+        if ($this->logger) {
+            $this->logger->warning($message, $context);
+        }
+    }
+
+    /**
+     * Registra una actividad de API
+     *
+     * @param string $endpoint
+     * @param string $method
+     * @param int $statusCode
+     * @param array $context
+     * @return void
+     */
+    public function logApiActivity(string $endpoint, string $method, int $statusCode, array $context = []): void
+    {
+        if (!$this->loggingEnabled) {
+            return;
+        }
+
+        $context['endpoint'] = $endpoint;
+        $context['method'] = $method;
+        $context['status_code'] = $statusCode;
+        $context['ip_address'] = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $context['user_agent'] = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+        $context['timestamp'] = date('Y-m-d H:i:s');
+
+        $message = "API {$method} {$endpoint} - Status: {$statusCode}";
+        
+        if ($this->apiLogger) {
+            $this->apiLogger->info($message, $context);
+        }
+        if ($this->logger) {
+            $this->logger->info($message, $context);
+        }
+    }
+
+    /**
+     * Registra una excepción completa
+     *
+     * @param \Throwable $exception
+     * @param array $context
+     * @return void
+     */
+    public function logException(\Throwable $exception, array $context = []): void
+    {
+        if (!$this->loggingEnabled) {
+            return;
+        }
+
+        $context['exception_class'] = get_class($exception);
+        $context['exception_message'] = $exception->getMessage();
+        $context['exception_file'] = $exception->getFile();
+        $context['exception_line'] = $exception->getLine();
+        $context['exception_trace'] = $exception->getTraceAsString();
+        $context['timestamp'] = date('Y-m-d H:i:s');
+
+        $message = "Exception: {$exception->getMessage()} in {$exception->getFile()}:{$exception->getLine()}";
+        
+        if ($this->logger) {
+            $this->logger->error($message, $context);
+        }
     }
 }

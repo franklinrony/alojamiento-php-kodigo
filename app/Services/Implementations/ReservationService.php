@@ -60,13 +60,22 @@ class ReservationService implements IReservationService
             // Validar datos
             $validation = $this->validateReservationData($data);
             if (!empty($validation['errors'])) {
-                error_log("Validation errors: " . implode(', ', $validation['errors']));
+                $this->logger->warning("Validation errors in reservation creation", [
+                    'errors' => $validation['errors'],
+                    'user_id' => $userId,
+                    'accommodation_id' => $data['accommodation_id']
+                ]);
                 return null;
             }
 
             // Verificar disponibilidad
             if (!$this->isAccommodationAvailable($data['accommodation_id'], $data['check_in_date'], $data['check_out_date'])) {
-                error_log("Accommodation not available for the selected dates");
+                $this->logger->warning("Accommodation not available for selected dates", [
+                    'accommodation_id' => $data['accommodation_id'],
+                    'check_in_date' => $data['check_in_date'],
+                    'check_out_date' => $data['check_out_date'],
+                    'user_id' => $userId
+                ]);
                 return null;
             }
 
@@ -113,7 +122,13 @@ class ReservationService implements IReservationService
 
             return null;
         } catch (Exception $e) {
-            error_log("Error creating reservation: " . $e->getMessage());
+            $this->logger->error("Error creating reservation", [
+                'user_id' => $userId,
+                'accommodation_id' => $data['accommodation_id'] ?? null,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return null;
         }
     }
@@ -131,12 +146,19 @@ class ReservationService implements IReservationService
             $reservation = $this->getReservationById($reservationId, $userId);
             
             if (!$reservation) {
-                error_log("Reservation not found or user not authorized");
+                $this->logger->warning("Reservation not found or user not authorized", [
+                    'reservation_id' => $reservationId,
+                    'user_id' => $userId
+                ]);
                 return false;
             }
 
             if (!$reservation->isActive()) {
-                error_log("Reservation is not active and cannot be cancelled");
+                $this->logger->warning("Reservation is not active and cannot be cancelled", [
+                    'reservation_id' => $reservationId,
+                    'user_id' => $userId,
+                    'status' => $reservation->getStatus()
+                ]);
                 return false;
             }
 
@@ -162,7 +184,13 @@ class ReservationService implements IReservationService
 
             return false;
         } catch (Exception $e) {
-            error_log("Error cancelling reservation: " . $e->getMessage());
+            $this->logger->error("Error cancelling reservation", [
+                'reservation_id' => $reservationId,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return false;
         }
     }
@@ -256,7 +284,14 @@ class ReservationService implements IReservationService
 
             return round($totalPrice, 2);
         } catch (Exception $e) {
-            error_log("Error calculating total price: " . $e->getMessage());
+            $this->logger->error("Error calculating total price", [
+                'accommodation_id' => $accommodationId,
+                'check_in_date' => $checkInDate,
+                'check_out_date' => $checkOutDate,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return 0.0;
         }
     }

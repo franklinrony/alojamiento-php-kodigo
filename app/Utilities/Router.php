@@ -4,7 +4,7 @@ namespace App\Utilities;
 
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
-use League\Container\Container;
+use DI\Container;
 use function FastRoute\simpleDispatcher;
 
 /**
@@ -57,7 +57,14 @@ class Router
         $httpMethod = $_SERVER['REQUEST_METHOD'];
         $uri = $this->getUri();
         
-        error_log("Procesando ruta: {$uri} con método {$httpMethod}");
+        // Log de la ruta usando el sistema de logging
+        if ($this->container->has(\App\Services\ILoggerService::class)) {
+            $logger = $this->container->get(\App\Services\ILoggerService::class);
+            $logger->debug("Procesando ruta", [
+                'uri' => $uri,
+                'method' => $httpMethod
+            ]);
+        }
         
         // Obtener información de la ruta
         $routeInfo = $this->dispatcher->dispatch($httpMethod, $uri);
@@ -165,10 +172,8 @@ class Router
      */
     private function resolveController(string $controllerClass): object
     {
-        // Verificar si el controlador está registrado en el contenedor
-        if (!$this->container->has($controllerClass)) {
-            throw new \RuntimeException("Controlador {$controllerClass} no está registrado en el contenedor de dependencias");
-        }
+        // PHP-DI maneja automáticamente la resolución de dependencias
+        // No necesitamos verificar si está registrado
 
         // Resolver el controlador usando el contenedor
         return $this->container->get($controllerClass);

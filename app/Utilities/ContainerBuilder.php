@@ -61,21 +61,12 @@ class ContainerBuilder
     {
         $container = new Container();
 
-        // Registrar utilidades base
+        // Solo registrar lo esencial
         self::registerBaseUtilities($container);
-        
-        // Registrar servicios base
         self::registerBaseServices($container);
-
-        // Registrar módulos según se necesiten
         self::registerAuthModule($container);
-        self::registerAccommodationModule($container);
-        self::registerReservationModule($container);
         
-        // Registrar controladores y middlewares
-        self::registerControllers($container);
-        self::registerMiddlewares($container);
-
+        // El resto se registra bajo demanda
         return $container;
     }
 
@@ -92,9 +83,9 @@ class ContainerBuilder
         $container->addShared(\Twig\Environment::class, function () use ($container) {
             $loader = new \Twig\Loader\FilesystemLoader(PathHelper::getViewsPath());
             $twig = new \Twig\Environment($loader, [
-                'cache' => false, // Deshabilitar cache para debug
-                'debug' => true,
-                'auto_reload' => true
+                'cache' => $_ENV['APP_DEBUG'] === 'true' ? false : __DIR__ . '/../../var/cache/twig',
+                'debug' => $_ENV['APP_DEBUG'] === 'true',
+                'auto_reload' => $_ENV['APP_DEBUG'] === 'true'
             ]);
             
             // Si estamos en modo debug, agregar la extensión de debug de Twig
@@ -109,6 +100,37 @@ class ContainerBuilder
             
             return $twig;
         });
+    }
+
+    /**
+     * Registra módulos bajo demanda para optimizar rendimiento
+     */
+    public static function ensureModuleRegistered(string $module): void
+    {
+        $container = self::getInstance();
+        
+        switch ($module) {
+            case 'accommodation':
+                if (!$container->has(IAccommodationService::class)) {
+                    self::registerAccommodationModule($container);
+                }
+                break;
+            case 'reservation':
+                if (!$container->has(IReservationService::class)) {
+                    self::registerReservationModule($container);
+                }
+                break;
+            case 'controllers':
+                if (!$container->has(HomeController::class)) {
+                    self::registerControllers($container);
+                }
+                break;
+            case 'middlewares':
+                if (!$container->has(CorsMiddleware::class)) {
+                    self::registerMiddlewares($container);
+                }
+                break;
+        }
     }
 
     private static function registerControllers(Container $container): void
@@ -131,7 +153,8 @@ class ContainerBuilder
                 IReservationService::class,
                 IAccommodationService::class,
                 IRequestValidator::class,
-                IAuthenticator::class
+                IAuthenticator::class,
+                ILoggerService::class
             ]);
 
         // Registrar AuthController

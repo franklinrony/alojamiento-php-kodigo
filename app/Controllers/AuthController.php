@@ -188,7 +188,21 @@ class AuthController extends BaseController
             }
 
             // Log para depuración
-            error_log("Intento de login para email: " . $data['email']);
+            // Log del intento de login usando el sistema de logging
+            if (class_exists('\App\Services\ILoggerService')) {
+                try {
+                    $container = \App\Utilities\DiContainer::getInstance();
+                    if ($container->has(\App\Services\ILoggerService::class)) {
+                        $logger = $container->get(\App\Services\ILoggerService::class);
+                        $logger->logSecurityEvent("Intento de login", [
+                            'email' => $data['email'],
+                            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+                        ]);
+                    }
+                } catch (\Exception $logError) {
+                    // Fallback silencioso para evitar errores en el logging
+                }
+            }
             
             if (!$this->authenticator->authenticate($data['email'], $data['password'])) {
                 if ($isApi) {

@@ -2,7 +2,7 @@
 
 namespace App\Utilities;
 
-use League\Container\Container;
+use DI\Container;
 
 class ErrorRenderer
 {
@@ -12,13 +12,8 @@ class ErrorRenderer
     public static function renderErrorPage(Container $container, string $template, array $data = []): void
     {
         try {
-            if ($container->has(\Twig\Environment::class)) {
-                $twig = $container->get(\Twig\Environment::class);
-                echo $twig->render($template, $data);
-            } else {
-                // Fallback si Twig no está disponible
-                self::renderFallbackError($data);
-            }
+            $twig = $container->get(\Twig\Environment::class);
+            echo $twig->render($template, $data);
         } catch (\Exception $twigError) {
             // Si incluso el renderizado de Twig falla, usar fallback
             self::renderFallbackError($data);
