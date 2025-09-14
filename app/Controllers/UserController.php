@@ -134,7 +134,7 @@ class UserController extends BaseController
 
         if (!$this->isMethod('POST')) {
             $this->flash('error', 'Método no permitido');
-            header('Location: /user/profile/edit');
+            header('Location: /profile');
             exit;
         }
 
@@ -144,34 +144,60 @@ class UserController extends BaseController
         $rules = [
             'name' => ['type' => 'string', 'min' => 2],
             'email' => ['type' => 'string', 'email' => true],
-            'current_password' => ['type' => 'string', 'min' => 6],
-            'new_password' => ['type' => 'string', 'min' => 6]
+            'password' => ['type' => 'string', 'min' => 8, 'optional' => true],
+            'passwordConfirm' => ['type' => 'string', 'optional' => true]
         ];
 
         if (!$this->validator->validate($data, $rules)) {
             $this->flash('error', 'Errores de validación: ' . implode(', ', $this->validator->getErrors()));
-            header('Location: /user/profile/edit');
+            header('Location: /profile');
             exit;
+        }
+
+        // Validación adicional para contraseñas
+        if (!empty($data['password']) || !empty($data['passwordConfirm'])) {
+            if (empty($data['password']) || empty($data['passwordConfirm'])) {
+                $this->flash('error', 'Debes completar ambos campos de contraseña');
+                header('Location: /profile');
+                exit;
+            }
+            
+            if ($data['password'] !== $data['passwordConfirm']) {
+                $this->flash('error', 'Las contraseñas no coinciden');
+                header('Location: /profile');
+                exit;
+            }
         }
 
         $data = $this->validator->sanitize($data);
         $userId = $this->authenticator->getUserId();
 
+        // Preparar datos para actualización
+        $updateData = [
+            'name' => $data['name'],
+            'email' => $data['email']
+        ];
+
+        // Si se proporciona una nueva contraseña, incluirla hasheada
+        if (!empty($data['password'])) {
+            $updateData['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        }
+
         try {
-            $user = $this->userService->updateUser($userId, $data);
+            $user = $this->userService->updateUser($userId, $updateData);
             
             if (!$user) {
                 $this->flash('error', 'Error al actualizar el perfil');
-                header('Location: /user/profile/edit');
+                header('Location: /profile');
                 exit;
             }
 
             $this->flash('success', 'Perfil actualizado exitosamente');
-            header('Location: /user/profile');
+            header('Location: /profile');
             exit;
         } catch (\RuntimeException $e) {
             $this->flash('error', $e->getMessage());
-            header('Location: /user/profile/edit');
+            header('Location: /profile');
             exit;
         }
     }
