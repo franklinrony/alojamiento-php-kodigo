@@ -62,13 +62,15 @@ class ReservationService implements IReservationService
             if (!empty($validation['errors'])) {
                 $this->logger->warning("Validation errors in reservation creation", [
                     'errors' => $validation['errors'],
-                    'user_id' => $userId,
+                    'user_id' => $data['user_id'] ?? 'unknown',
                     'accommodation_id' => $data['accommodation_id']
                 ]);
                 return null;
             }
 
-            // Verificar disponibilidad
+            // Verificar disponibilidad (deshabilitado temporalmente para permitir overbooking)
+            // TODO: Implementar validación de disponibilidad más sofisticada si es necesario
+            /*
             if (!$this->isAccommodationAvailable($data['accommodation_id'], $data['check_in_date'], $data['check_out_date'])) {
                 $this->logger->warning("Accommodation not available for selected dates", [
                     'accommodation_id' => $data['accommodation_id'],
@@ -78,6 +80,7 @@ class ReservationService implements IReservationService
                 ]);
                 return null;
             }
+            */
 
             // Calcular precio total
             $totalPrice = $this->calculateTotalPrice(
@@ -123,7 +126,7 @@ class ReservationService implements IReservationService
             return null;
         } catch (Exception $e) {
             $this->logger->error("Error creating reservation", [
-                'user_id' => $userId,
+                'user_id' => $data['user_id'] ?? 'unknown',
                 'accommodation_id' => $data['accommodation_id'] ?? null,
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),

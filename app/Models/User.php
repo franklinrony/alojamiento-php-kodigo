@@ -206,4 +206,23 @@ class User extends Model
         $this->role = $role;
         $this->role_id = $role ? $role->getId() : null;
     }
+
+    /**
+     * Convierte el modelo a un array excluyendo propiedades relacionadas
+     *
+     * @return array
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'password' => $this->password,
+            'role_id' => $this->role_id,
+            'active' => $this->active,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at
+        ];
+    }
 }

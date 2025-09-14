@@ -48,6 +48,7 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             $stmt->execute([$userId]);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
+            
             return $this->hydrateModels($results);
         } catch (PDOException $e) {
             $this->logDatabaseError("Error finding reservations by user ID", [
@@ -156,15 +157,15 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             
             $sql .= " ORDER BY r.check_in_date ASC";
             
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             return $this->hydrateModels($results);
         } catch (PDOException $e) {
             $this->logDatabaseError("Error finding reservations by date range", [
-                'start_date' => $startDate,
-                'end_date' => $endDate,
+                'start_date' => $checkIn,
+                'end_date' => $checkOut,
                 'error' => $e->getMessage()
             ]);
             return [];
@@ -202,7 +203,7 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
                 $params[] = $excludeReservationId;
             }
             
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -210,8 +211,8 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
         } catch (PDOException $e) {
             $this->logDatabaseError("Error checking date conflict", [
                 'accommodation_id' => $accommodationId,
-                'start_date' => $startDate,
-                'end_date' => $endDate,
+                'start_date' => $checkIn,
+                'end_date' => $checkOut,
                 'error' => $e->getMessage()
             ]);
             return true; // En caso de error, asumir que hay conflicto por seguridad

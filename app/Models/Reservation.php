@@ -276,4 +276,26 @@ class Reservation extends Model
         
         return $checkIn >= $today && $checkOut > $checkIn;
     }
+
+    /**
+     * Convierte el modelo a un array excluyendo propiedades relacionadas
+     *
+     * @return array
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'user_id' => $this->user_id,
+            'accommodation_id' => $this->accommodation_id,
+            'check_in_date' => $this->check_in_date,
+            'check_out_date' => $this->check_out_date,
+            'total_price' => $this->total_price,
+            'status' => $this->status,
+            'guests' => $this->guests,
+            'special_requests' => $this->special_requests,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at
+        ];
+    }
 }

@@ -356,9 +356,25 @@ class UserController extends BaseController
             }
         }
 
+        // Obtener todos los alojamientos para el dropdown
+        try {
+            $allAccommodations = $this->accommodationService->getAllAccommodations();
+            $this->logger->info("Accommodations loaded for reservation form", [
+                'count' => count($allAccommodations),
+                'accommodations' => array_map(function($acc) {
+                    return ['id' => $acc->getId(), 'name' => $acc->getName(), 'location' => $acc->getLocation(), 'price' => $acc->getPrice()];
+                }, $allAccommodations)
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error("Error al obtener alojamientos para formulario de reserva: " . $e->getMessage());
+            $allAccommodations = [];
+            $this->flash('error', 'Error al cargar los alojamientos. Por favor, inténtelo de nuevo.');
+        }
+
         $this->render('user/create-reservation.twig', [
             'pageTitle' => 'Crear Reserva',
-            'accommodation' => $accommodation
+            'accommodation' => $accommodation,
+            'allAccommodations' => $allAccommodations
         ]);
     }
 
@@ -402,7 +418,7 @@ class UserController extends BaseController
             $reservation = $this->reservationService->createReservation($data);
             
             if (!$reservation) {
-                $this->flash('error', 'Error al crear la reserva. Verifica que el alojamiento esté disponible para las fechas seleccionadas.');
+                $this->flash('error', 'Error al crear la reserva. Verifica los datos ingresados e intenta nuevamente.');
                 header('Location: /user/reservations/create?accommodation_id=' . $data['accommodation_id']);
                 exit;
             }
@@ -411,9 +427,57 @@ class UserController extends BaseController
             header('Location: /user/reservations');
             exit;
         } catch (\RuntimeException $e) {
-            $this->flash('error', $e->getMessage());
+            $this->logger->error("Error creating reservation: " . $e->getMessage(), [
+                'user_id' => $data['user_id'],
+                'accommodation_id' => $data['accommodation_id'],
+                'data' => $data
+            ]);
+            $this->flash('error', 'Error al crear la reserva: ' . $e->getMessage());
             header('Location: /user/reservations/create?accommodation_id=' . $data['accommodation_id']);
             exit;
+        }
+    }
+
+    /**
+     * Verifica disponibilidad de un alojamiento (API endpoint)
+     */
+    public function checkAvailability(int $accommodationId): void
+    {
+        if (!$this->authenticator->isAuthenticated()) {
+            http_response_code(401);
+            echo json_encode(['error' => 'No autorizado']);
+            exit;
+        }
+
+        $checkIn = $_GET['check_in'] ?? null;
+        $checkOut = $_GET['check_out'] ?? null;
+
+        if (!$checkIn || !$checkOut) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Fechas de entrada y salida requeridas']);
+            exit;
+        }
+
+        try {
+            $available = $this->reservationService->isAccommodationAvailable($accommodationId, $checkIn, $checkOut);
+            
+            header('Content-Type: application/json');
+            echo json_encode([
+                'available' => $available,
+                'accommodation_id' => $accommodationId,
+                'check_in' => $checkIn,
+                'check_out' => $checkOut,
+                'message' => $available ? 'Disponible' : 'No disponible para las fechas seleccionadas'
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error("Error checking availability: " . $e->getMessage(), [
+                'accommodation_id' => $accommodationId,
+                'check_in' => $checkIn,
+                'check_out' => $checkOut
+            ]);
+            
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al verificar disponibilidad']);
         }
     }
 

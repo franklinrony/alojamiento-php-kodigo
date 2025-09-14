@@ -39,4 +39,7 @@ return function (RouteCollector $r) {
         'middleware' => ['auth'],
         'permission' => 'delete_accommodation'
     ]);
+
+    // Rutas de reservas
+    $r->get('/api/reservations/availability/{id:\d+}', ['App\Controllers\UserController', 'checkAvailability', 'middleware' => ['auth']]);
 };
