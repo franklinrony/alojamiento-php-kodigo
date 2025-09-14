@@ -91,15 +91,10 @@ class Router
                     header('Content-Type: application/json');
                     echo json_encode(['error' => true, 'message' => 'Ruta no encontrada']);
                 } else {
-                    // Para rutas web, mostrar una página 404
-                    if ($this->container->has(\Twig\Environment::class)) {
-                        $twig = $this->container->get(\Twig\Environment::class);
-                        echo $twig->render('errors/404.twig', [
-                            'pageTitle' => 'Página no encontrada'
-                        ]);
-                    } else {
-                        echo 'Página no encontrada';
-                    }
+                    // Para rutas web, usar ErrorRenderer para configurar variables globales
+                    ErrorRenderer::renderErrorPage($this->container, 'errors/404.twig', [
+                        'pageTitle' => 'Página no encontrada'
+                    ]);
                 }
                 break;
 
@@ -109,15 +104,10 @@ class Router
                     header('Content-Type: application/json');
                     echo json_encode(['error' => true, 'message' => 'Método no permitido']);
                 } else {
-                    // Para rutas web, mostrar una página 405
-                    if ($this->container->has(\Twig\Environment::class)) {
-                        $twig = $this->container->get(\Twig\Environment::class);
-                        echo $twig->render('errors/405.twig', [
-                            'pageTitle' => 'Método no permitido'
-                        ]);
-                    } else {
-                        echo 'Método no permitido';
-                    }
+                    // Para rutas web, usar ErrorRenderer para configurar variables globales
+                    ErrorRenderer::renderErrorPage($this->container, 'errors/405.twig', [
+                        'pageTitle' => 'Método no permitido'
+                    ]);
                 }
                 break;
 
