@@ -96,10 +96,83 @@
         {% endfor %}
     </div>
 
+<<<<<<< Updated upstream
     <!-- Main Content -->
     <main class="container py-4 flex-shrink-0">
         {% block content %}{% endblock %}
     </main>
+=======
+			<!-- Custom CSS -->
+			{% block styles %}{% endblock %}
+		</head>
+		<body
+			class="d-flex flex-column h-100">
+			<!-- Navbar -->
+			<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+				<div class="container">
+					<a class="navbar-brand" href="/">{{ app_name }}</a>
+					<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+						<span class="navbar-toggler-icon"></span>
+					</button>
+					<div class="collapse navbar-collapse" id="navbarNav">
+						<ul class="navbar-nav me-auto">
+							<li class="nav-item">
+								<a class="nav-link" href="/accommodations">
+									<i class="bi bi-house me-1"></i>
+									Alojamientos
+								</a>
+							</li>
+						</ul>
+						<ul class="navbar-nav ms-auto">
+							{% if auth.isAuthenticated %}
+								<li class="nav-item">
+									<span class="nav-link">
+										<i class="bi bi-person-circle me-1"></i>
+										Bienvenido {{ auth.user.name }}
+									</span>
+								</li>
+								{% if auth.hasPermission('access-admin') %}
+									<li class="nav-item">
+										<a class="nav-link" href="/admin">
+											<i class="bi bi-speedometer2 me-1"></i>
+											Dashboard
+										</a>
+									</li>
+								{% endif %}
+								<li class="nav-item">
+									<a class="nav-link" href="/user/reservations">
+										<i class="bi bi-calendar-check me-1"></i>
+										Mis Reservas
+									</a>
+								</li>
+								<li class="nav-item">
+									<a class="nav-link" href="/profile">
+										<i class="bi bi-gear me-1"></i>
+										Mi Perfil
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="nav-link">
+										<i class="bi bi-box-arrow-right me-1"></i>
+										Cerrar Sesión
+									</a>
+									<form id="logout-form" action="/auth/logout" method="POST" class="d-none">
+										<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+									</form>
+								</li>
+							{% else %}
+								<li class="nav-item">
+									<a class="nav-link" href="/auth/login">Iniciar Sesión</a>
+								</li>
+								<li class="nav-item">
+									<a class="nav-link" href="/auth/register">Registrarse</a>
+								</li>
+							{% endif %}
+						</ul>
+					</div>
+				</div>
+			</nav>
+>>>>>>> Stashed changes
 
     <!-- Footer -->
     <footer class="footer mt-auto py-3 bg-dark text-white">
