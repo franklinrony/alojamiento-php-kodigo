@@ -5,7 +5,7 @@ namespace App\Utilities;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use DI\Container;
-use function FastRoute\simpleDispatcher;
+use function FastRoute\cachedDispatcher;
 
 /**
  * Class Router
@@ -33,11 +33,23 @@ class Router
     }
 
     /**
-     * Inicializa el despachador de rutas
+     * Inicializa el despachador de rutas con cache
      */
     private function initializeDispatcher(): void
     {
-        $this->dispatcher = simpleDispatcher(function(RouteCollector $r) {
+        // Configurar el archivo de cache para FastRoute
+        $cacheFile = PathHelper::fromRoot('var/cache/fast_route_dispatcher.cache');
+        
+        // Asegurar que el directorio de cache existe
+        $cacheDir = dirname($cacheFile);
+        if (!is_dir($cacheDir)) {
+            mkdir($cacheDir, 0755, true);
+        }
+        
+        // Determinar si el cache está habilitado basado en el entorno
+        $cacheEnabled = $_ENV['APP_DEBUG'] !== 'true' && $_ENV['FASTROUTE_CACHE_ENABLED'] !== 'false';
+        
+        $this->dispatcher = cachedDispatcher(function(RouteCollector $r) {
             // Cargar rutas web
             $webRoutes = require PathHelper::fromRoot('config/routes/web.php');
             $webRoutes($r);
@@ -45,7 +57,10 @@ class Router
             // Cargar rutas API
             $apiRoutes = require PathHelper::fromRoot('config/routes/api.php');
             $apiRoutes($r);
-        });
+        }, [
+            'cacheFile' => $cacheFile,
+            'cacheDisabled' => !$cacheEnabled,
+        ]);
     }
 
     /**
@@ -242,5 +257,59 @@ class Router
         $uri = $this->getUri();
         return strpos($uri, '/api/') === 0 || 
                strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false;
+    }
+
+    /**
+     * Limpia el cache de FastRoute
+     * Útil para desarrollo cuando se modifican las rutas
+     *
+     * @return bool
+     */
+    public static function clearCache(): bool
+    {
+        $cacheFile = PathHelper::fromRoot('var/cache/fast_route_dispatcher.cache');
+        
+        if (file_exists($cacheFile)) {
+            return unlink($cacheFile);
+        }
+        
+        return true; // No existe el archivo, consideramos que está "limpio"
+    }
+
+    /**
+     * Verifica si el cache de FastRoute existe
+     *
+     * @return bool
+     */
+    public static function cacheExists(): bool
+    {
+        $cacheFile = PathHelper::fromRoot('var/cache/fast_route_dispatcher.cache');
+        return file_exists($cacheFile);
+    }
+
+    /**
+     * Obtiene información sobre el cache de FastRoute
+     *
+     * @return array
+     */
+    public static function getCacheInfo(): array
+    {
+        $cacheFile = PathHelper::fromRoot('var/cache/fast_route_dispatcher.cache');
+        
+        if (!file_exists($cacheFile)) {
+            return [
+                'exists' => false,
+                'size' => 0,
+                'modified' => null,
+                'path' => $cacheFile
+            ];
+        }
+        
+        return [
+            'exists' => true,
+            'size' => filesize($cacheFile),
+            'modified' => date('Y-m-d H:i:s', filemtime($cacheFile)),
+            'path' => $cacheFile
+        ];
     }
 }

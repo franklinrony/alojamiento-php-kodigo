@@ -24,15 +24,7 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    {% if auth.hasPermission('access-admin') %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin">
-                            <i class="bi bi-speedometer2 me-1"></i>
-                            Dashboard
-                        </a>
-                    </li>
-                    {% endif %}
+                <ul class="navbar-nav me-auto">          
                     {% if auth.hasPermission('manage-accommodations') %}
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/accommodations">

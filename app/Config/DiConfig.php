@@ -67,6 +67,21 @@ class DiConfig
         // Habilitar autowiring para mejor rendimiento
         $builder->useAutowiring(true);
         
+        // Configurar cache del contenedor para optimización
+        $cacheEnabled = $_ENV['APP_DEBUG'] !== 'true' && $_ENV['DI_CACHE_ENABLED'] !== 'false';
+        
+        if ($cacheEnabled) {
+            $cacheFile = PathHelper::fromRoot('var/cache/di_container.cache');
+            $cacheDir = dirname($cacheFile);
+            
+            // Asegurar que el directorio de cache existe
+            if (!is_dir($cacheDir)) {
+                mkdir($cacheDir, 0755, true);
+            }
+            
+            $builder->enableCompilation($cacheDir);
+        }
+        
         // Configurar definiciones
         $builder->addDefinitions(self::getDefinitions());
         
@@ -106,7 +121,9 @@ class DiConfig
             }),
 
             // ===== SERVICIOS DE LOGGING =====
-            \App\Services\ILoggerService::class => \DI\create(LoggerService::class),
+            \App\Services\ILoggerService::class => \DI\factory(function() {
+                return new LoggerService();
+            }),
 
             // ===== MODELOS =====
             User::class => \DI\create(),
@@ -116,39 +133,49 @@ class DiConfig
             Reservation::class => \DI\create(),
 
             // ===== REPOSITORIOS =====
-            \App\Repositories\IUserRepository::class => \DI\create(UserRepository::class)
-                ->constructor(\DI\get(User::class)),
-            \App\Repositories\IRoleRepository::class => \DI\create(RoleRepository::class)
-                ->constructor(\DI\get(Role::class)),
-            \App\Repositories\IPermissionRepository::class => \DI\create(PermissionRepository::class)
-                ->constructor(\DI\get(Permission::class)),
-            \App\Repositories\IAccommodationRepository::class => \DI\create(AccommodationRepository::class)
-                ->constructor(\DI\get(Accommodation::class)),
-            \App\Repositories\IReservationRepository::class => \DI\create(ReservationRepository::class)
-                ->constructor(\DI\get(Reservation::class)),
+            \App\Repositories\IUserRepository::class => \DI\factory(function(Container $container) {
+                return new UserRepository($container->get(User::class));
+            }),
+            \App\Repositories\IRoleRepository::class => \DI\factory(function(Container $container) {
+                return new RoleRepository($container->get(Role::class));
+            }),
+            \App\Repositories\IPermissionRepository::class => \DI\factory(function(Container $container) {
+                return new PermissionRepository($container->get(Permission::class));
+            }),
+            \App\Repositories\IAccommodationRepository::class => \DI\factory(function(Container $container) {
+                return new AccommodationRepository($container->get(Accommodation::class));
+            }),
+            \App\Repositories\IReservationRepository::class => \DI\factory(function(Container $container) {
+                return new ReservationRepository($container->get(Reservation::class));
+            }),
 
             // ===== SERVICIOS =====
-            \App\Services\IUserService::class => \DI\create(UserService::class)
-                ->constructor(
-                    \DI\get(\App\Repositories\IUserRepository::class),
-                    \DI\get(\App\Repositories\IRoleRepository::class),
-                    \DI\get(\App\Repositories\IPermissionRepository::class)
-                ),
-            \App\Services\IRoleService::class => \DI\create(RoleService::class)
-                ->constructor(\DI\get(\App\Repositories\IRoleRepository::class)),
-            \App\Services\IPermissionService::class => \DI\create(PermissionService::class)
-                ->constructor(\DI\get(\App\Repositories\IPermissionRepository::class)),
-            \App\Services\IAccommodationService::class => \DI\create(AccommodationService::class)
-                ->constructor(
-                    \DI\get(\App\Repositories\IAccommodationRepository::class),
-                    \DI\get(\App\Services\IUserService::class)
-                ),
-            \App\Services\IReservationService::class => \DI\create(ReservationService::class)
-                ->constructor(
-                    \DI\get(\App\Repositories\IReservationRepository::class),
-                    \DI\get(\App\Repositories\IAccommodationRepository::class),
-                    \DI\get(\App\Services\ILoggerService::class)
-                ),
+            \App\Services\IUserService::class => \DI\factory(function(Container $container) {
+                return new UserService(
+                    $container->get(\App\Repositories\IUserRepository::class),
+                    $container->get(\App\Repositories\IRoleRepository::class),
+                    $container->get(\App\Repositories\IPermissionRepository::class)
+                );
+            }),
+            \App\Services\IRoleService::class => \DI\factory(function(Container $container) {
+                return new RoleService($container->get(\App\Repositories\IRoleRepository::class));
+            }),
+            \App\Services\IPermissionService::class => \DI\factory(function(Container $container) {
+                return new PermissionService($container->get(\App\Repositories\IPermissionRepository::class));
+            }),
+            \App\Services\IAccommodationService::class => \DI\factory(function(Container $container) {
+                return new AccommodationService(
+                    $container->get(\App\Repositories\IAccommodationRepository::class),
+                    $container->get(\App\Services\IUserService::class)
+                );
+            }),
+            \App\Services\IReservationService::class => \DI\factory(function(Container $container) {
+                return new ReservationService(
+                    $container->get(\App\Repositories\IReservationRepository::class),
+                    $container->get(\App\Repositories\IAccommodationRepository::class),
+                    $container->get(\App\Services\ILoggerService::class)
+                );
+            }),
 
             // ===== CONTROLADORES =====
             HomeController::class => \DI\create()
@@ -223,5 +250,93 @@ class DiConfig
                     \DI\get(\App\Services\IPermissionService::class)
                 ),
         ];
+    }
+
+    /**
+     * Limpia el cache del contenedor DI
+     * Útil para desarrollo cuando se modifican las definiciones
+     *
+     * @return bool
+     */
+    public static function clearCache(): bool
+    {
+        $cacheDir = PathHelper::fromRoot('var/cache');
+        
+        if (!is_dir($cacheDir)) {
+            return true; // No existe el directorio, consideramos que está "limpio"
+        }
+        
+        $success = true;
+        $files = glob($cacheDir . '/CompiledContainer.php');
+        
+        foreach ($files as $file) {
+            if (file_exists($file)) {
+                $success = $success && unlink($file);
+            }
+        }
+        
+        return $success;
+    }
+
+    /**
+     * Verifica si el cache del contenedor DI existe
+     *
+     * @return bool
+     */
+    public static function cacheExists(): bool
+    {
+        $cacheDir = PathHelper::fromRoot('var/cache');
+        $files = glob($cacheDir . '/CompiledContainer.php');
+        return !empty($files);
+    }
+
+    /**
+     * Obtiene información sobre el cache del contenedor DI
+     *
+     * @return array
+     */
+    public static function getCacheInfo(): array
+    {
+        $cacheDir = PathHelper::fromRoot('var/cache');
+        $files = glob($cacheDir . '/CompiledContainer.php');
+        
+        if (empty($files)) {
+            return [
+                'exists' => false,
+                'files' => [],
+                'totalSize' => 0,
+                'path' => $cacheDir
+            ];
+        }
+        
+        $totalSize = 0;
+        $fileInfo = [];
+        
+        foreach ($files as $file) {
+            $size = filesize($file);
+            $totalSize += $size;
+            $fileInfo[] = [
+                'name' => basename($file),
+                'size' => $size,
+                'modified' => date('Y-m-d H:i:s', filemtime($file)),
+                'path' => $file
+            ];
+        }
+        
+        return [
+            'exists' => true,
+            'files' => $fileInfo,
+            'totalSize' => $totalSize,
+            'path' => $cacheDir
+        ];
+    }
+
+    /**
+     * Resetea la instancia del contenedor
+     * Útil para testing o cuando se necesita forzar la recreación
+     */
+    public static function reset(): void
+    {
+        self::$container = null;
     }
 }
