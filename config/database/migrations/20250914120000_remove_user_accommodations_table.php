@@ -9,7 +9,7 @@ class RemoveUserAccommodationsTable extends AbstractMigration
         // Eliminar la tabla user_accommodations ya que es redundante
         // La relación usuario-alojamiento se maneja a través de reservations
         if ($this->hasTable('user_accommodations')) {
-            $this->dropTable('user_accommodations');
+            $this->table('user_accommodations')->drop()->save();
         }
     }
 }
