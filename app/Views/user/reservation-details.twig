@@ -30,8 +30,8 @@
 
                             <h5 class="text-primary">Detalles de la Reserva</h5>
                             <div class="mb-3">
-                                <strong>Fecha de entrada:</strong> {{ reservation.check_in_date|date('d/m/Y') }}<br>
-                                <strong>Fecha de salida:</strong> {{ reservation.check_out_date|date('d/m/Y') }}<br>
+                                <strong>Fecha de entrada:</strong> {{ reservation.getCheckInDate()|date('d/m/Y') }}<br>
+                                <strong>Fecha de salida:</strong> {{ reservation.getCheckOutDate()|date('d/m/Y') }}<br>
                                 <strong>Número de noches:</strong> {{ reservation.nights }}<br>
                                 <strong>Número de huéspedes:</strong> {{ reservation.guests }}
                             </div>
@@ -58,9 +58,9 @@
 
                             <h5 class="text-primary mt-4">Información Adicional</h5>
                             <div class="mb-3">
-                                <strong>Reserva creada:</strong> {{ reservation.created_at|date('d/m/Y H:i') }}<br>
-                                {% if reservation.updated_at and reservation.updated_at != reservation.created_at %}
-                                <strong>Última actualización:</strong> {{ reservation.updated_at|date('d/m/Y H:i') }}<br>
+                                <strong>Reserva creada:</strong> {{ reservation.getCreatedAt()|date('d/m/Y H:i') }}<br>
+                                {% if reservation.getUpdatedAt() and reservation.getUpdatedAt() != reservation.getCreatedAt() %}
+                                <strong>Última actualización:</strong> {{ reservation.getUpdatedAt()|date('d/m/Y H:i') }}<br>
                                 {% endif %}
                                 {% if reservation.special_requests %}
                                 <strong>Solicitudes especiales:</strong><br>

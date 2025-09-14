@@ -278,6 +278,22 @@ class Reservation extends Model
     }
 
     /**
+     * @return string
+     */
+    public function getCreatedAt(): string
+    {
+        return $this->created_at;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getUpdatedAt(): ?string
+    {
+        return $this->updated_at;
+    }
+
+    /**
      * Convierte el modelo a un array excluyendo propiedades relacionadas
      *
      * @return array
