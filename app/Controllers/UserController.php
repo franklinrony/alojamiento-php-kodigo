@@ -89,9 +89,13 @@ class UserController extends BaseController
             exit;
         }
 
+        // Obtener estadísticas del usuario
+        $stats = $this->reservationService->getReservationStats($userId);
+
         $this->render('user/profile.twig', [
             'pageTitle' => 'Mi Perfil',
-            'user' => $user
+            'user' => $user,
+            'stats' => $stats
         ]);
     }
 
@@ -143,9 +147,7 @@ class UserController extends BaseController
         // Reglas de validación para actualización de perfil
         $rules = [
             'name' => ['type' => 'string', 'min' => 2],
-            'email' => ['type' => 'string', 'email' => true],
-            'password' => ['type' => 'string', 'min' => 8, 'optional' => true],
-            'passwordConfirm' => ['type' => 'string', 'optional' => true]
+            'email' => ['type' => 'string', 'email' => true]
         ];
 
         if (!$this->validator->validate($data, $rules)) {
@@ -156,8 +158,20 @@ class UserController extends BaseController
 
         // Validación adicional para contraseñas
         if (!empty($data['password']) || !empty($data['passwordConfirm'])) {
-            if (empty($data['password']) || empty($data['passwordConfirm'])) {
-                $this->flash('error', 'Debes completar ambos campos de contraseña');
+            if (empty($data['password'])) {
+                $this->flash('error', 'Debes ingresar una nueva contraseña');
+                header('Location: /profile');
+                exit;
+            }
+            
+            if (empty($data['passwordConfirm'])) {
+                $this->flash('error', 'Debes confirmar la nueva contraseña');
+                header('Location: /profile');
+                exit;
+            }
+            
+            if (strlen($data['password']) < 8) {
+                $this->flash('error', 'La contraseña debe tener al menos 8 caracteres');
                 header('Location: /profile');
                 exit;
             }
