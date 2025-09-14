@@ -17,16 +17,22 @@ use App\Services\Implementations\RoleService;
 use App\Services\Implementations\PermissionService;
 use App\Services\Implementations\AccommodationService;
 use App\Services\Implementations\ReservationService;
+use App\Services\Implementations\UserActivityService;
+use App\Services\Implementations\UserPreferenceService;
 use App\Repositories\Implementations\UserRepository;
 use App\Repositories\Implementations\RoleRepository;
 use App\Repositories\Implementations\PermissionRepository;
 use App\Repositories\Implementations\AccommodationRepository;
 use App\Repositories\Implementations\ReservationRepository;
+use App\Repositories\Implementations\UserActivityRepository;
+use App\Repositories\Implementations\UserPreferenceRepository;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Permission;
 use App\Models\Accommodation;
 use App\Models\Reservation;
+use App\Models\UserActivity;
+use App\Models\UserPreference;
 use App\Controllers\HomeController;
 use App\Controllers\AuthController;
 use App\Controllers\AccommodationController;
@@ -130,6 +136,8 @@ class DiConfig
             Permission::class => \DI\create(),
             Accommodation::class => \DI\create(),
             Reservation::class => \DI\create(),
+            UserActivity::class => \DI\create(),
+            UserPreference::class => \DI\create(),
 
             // ===== REPOSITORIOS =====
             \App\Repositories\IUserRepository::class => \DI\factory(function(Container $container) {
@@ -146,6 +154,12 @@ class DiConfig
             }),
             \App\Repositories\IReservationRepository::class => \DI\factory(function(Container $container) {
                 return new ReservationRepository($container->get(Reservation::class));
+            }),
+            \App\Repositories\IUserActivityRepository::class => \DI\factory(function(Container $container) {
+                return new UserActivityRepository($container->get(UserActivity::class));
+            }),
+            \App\Repositories\IUserPreferenceRepository::class => \DI\factory(function(Container $container) {
+                return new UserPreferenceRepository($container->get(UserPreference::class));
             }),
 
             // ===== SERVICIOS =====
@@ -173,6 +187,16 @@ class DiConfig
                     $container->get(\App\Repositories\IReservationRepository::class),
                     $container->get(\App\Repositories\IAccommodationRepository::class),
                     $container->get(\App\Services\ILoggerService::class)
+                );
+            }),
+            \App\Services\IUserActivityService::class => \DI\factory(function(Container $container) {
+                return new UserActivityService(
+                    $container->get(\App\Repositories\IUserActivityRepository::class)
+                );
+            }),
+            \App\Services\IUserPreferenceService::class => \DI\factory(function(Container $container) {
+                return new UserPreferenceService(
+                    $container->get(\App\Repositories\IUserPreferenceRepository::class)
                 );
             }),
 
@@ -207,7 +231,9 @@ class DiConfig
                     \DI\get(\App\Services\IAccommodationService::class),
                     \DI\get(\App\Utilities\IRequestValidator::class),
                     \DI\get(\App\Utilities\IAuthenticator::class),
-                    \DI\get(\App\Services\ILoggerService::class)
+                    \DI\get(\App\Services\ILoggerService::class),
+                    \DI\get(\App\Services\IUserActivityService::class),
+                    \DI\get(\App\Services\IUserPreferenceService::class)
                 ),
             RedirectController::class => \DI\create()
                 ->constructor(
