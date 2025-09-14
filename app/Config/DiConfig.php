@@ -113,9 +113,8 @@ class DiConfig
                     $twig->addExtension(new DebugExtension());
                 }
                 
-                // Agregar extensiones personalizadas - EVITAR DEPENDENCIA CIRCULAR
-                // TwigExtensions se inicializará sin IAuthenticator para evitar el bucle
-                $twig->addExtension(new TwigExtensions(null));
+                // Agregar extensiones personalizadas
+                $twig->addExtension(new TwigExtensions($container->get(\App\Utilities\IAuthenticator::class)));
                 
                 return $twig;
             }),
