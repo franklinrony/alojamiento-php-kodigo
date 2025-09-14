@@ -186,7 +186,8 @@ class DiConfig
                 return new ReservationService(
                     $container->get(\App\Repositories\IReservationRepository::class),
                     $container->get(\App\Repositories\IAccommodationRepository::class),
-                    $container->get(\App\Services\ILoggerService::class)
+                    $container->get(\App\Services\ILoggerService::class),
+                    $container->get(\App\Services\IUserActivityService::class)
                 );
             }),
             \App\Services\IUserActivityService::class => \DI\factory(function(Container $container) {
@@ -246,7 +247,9 @@ class DiConfig
                 ->constructor(
                     \DI\get(Environment::class),
                     \DI\get(\App\Utilities\IRequestValidator::class),
-                    \DI\get(\App\Utilities\IAuthenticator::class)
+                    \DI\get(\App\Utilities\IAuthenticator::class),
+                    \DI\get(\App\Services\IAccommodationService::class),
+                    \DI\get(\App\Services\IUserService::class)
                 ),
             AdminAccommodationController::class => \DI\create()
                 ->constructor(
