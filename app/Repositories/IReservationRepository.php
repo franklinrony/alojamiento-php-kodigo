@@ -70,4 +70,12 @@ interface IReservationRepository extends IRepository
      * @return array
      */
     public function getStatsByUserId(int $userId): array;
+
+    /**
+     * Busca una reserva por ID incluyendo las relaciones con usuario y alojamiento
+     *
+     * @param int $id
+     * @return Reservation|null
+     */
+    public function findWithRelations(int $id): ?Reservation;
 }

@@ -229,7 +229,7 @@ class ReservationService implements IReservationService
      */
     public function getReservationById(int $reservationId, ?int $userId = null): ?Reservation
     {
-        $reservation = $this->reservationRepository->find($reservationId);
+        $reservation = $this->reservationRepository->findWithRelations($reservationId);
         
         if (!$reservation) {
             return null;

@@ -335,4 +335,66 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
         
         return $models;
     }
+
+    /**
+     * Busca una reserva por ID incluyendo las relaciones con usuario y alojamiento
+     *
+     * @param int $id
+     * @return Reservation|null
+     */
+    public function findWithRelations(int $id): ?Reservation
+    {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT r.*, 
+                       u.id as user_id, u.name as user_name, u.email as user_email,
+                       a.id as accommodation_id, a.name as accommodation_name, a.location as accommodation_location, a.price as accommodation_price
+                FROM {$this->table} r
+                LEFT JOIN users u ON r.user_id = u.id
+                LEFT JOIN accommodations a ON r.accommodation_id = a.id
+                WHERE r.id = ?
+            ");
+            
+            $stmt->execute([$id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$result) {
+                return null;
+            }
+            
+            // Crear el modelo de reserva
+            $reservation = $this->mapToModel($result);
+            
+            // Crear y asignar el modelo de usuario si existe
+            if ($result['user_id']) {
+                $user = new User();
+                $user->fill([
+                    'id' => $result['user_id'],
+                    'name' => $result['user_name'],
+                    'email' => $result['user_email']
+                ]);
+                $reservation->setUser($user);
+            }
+            
+            // Crear y asignar el modelo de alojamiento si existe
+            if ($result['accommodation_id']) {
+                $accommodation = new Accommodation();
+                $accommodation->fill([
+                    'id' => $result['accommodation_id'],
+                    'name' => $result['accommodation_name'],
+                    'location' => $result['accommodation_location'],
+                    'price' => $result['accommodation_price']
+                ]);
+                $reservation->setAccommodation($accommodation);
+            }
+            
+            return $reservation;
+        } catch (PDOException $e) {
+            $this->logDatabaseError("Error finding reservation with relations", [
+                'reservation_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
 }
