@@ -77,11 +77,6 @@ class UserActivityRepository extends BaseRepository implements IUserActivityRepo
         $stmt = $this->db->prepare("SELECT * FROM user_activities WHERE user_id = :user_id ORDER BY created_at DESC");
         $stmt->execute(['user_id' => $userId]);
         return array_map([$this, 'mapToModel'], $stmt->fetchAll());
-        $stmt = $this->db->prepare("SELECT * FROM $table WHERE user_id = :user_id ORDER BY created_at DESC");
-        $stmt->execute(['user_id' => $userId]);
-        $results = $stmt->fetchAll();
-
-        return array_map([$this, 'mapToModel'], $results);
     }
 
     /**

@@ -46,4 +46,36 @@ class UserActivity extends Model
         $user->fill(['id' => $data['user_id']]);
         return $user;
     }
+
+    /**
+     * @return int
+     */
+    public function getUserId(): int
+    {
+        return (int) $this->user_id;
+    }
+
+    /**
+     * @return string
+     */
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getDetails(): ?string
+    {
+        return $this->details;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCreatedAt(): string
+    {
+        return $this->created_at;
+    }
 }

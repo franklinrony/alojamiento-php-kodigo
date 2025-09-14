@@ -46,4 +46,36 @@ class UserPreference extends Model
         $user->fill(['id' => $data['user_id']]);
         return $user;
     }
+
+    /**
+     * @return int
+     */
+    public function getUserId(): int
+    {
+        return (int) $this->user_id;
+    }
+
+    /**
+     * @return string
+     */
+    public function getNotifications(): string
+    {
+        return $this->notifications;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getEmailUpdates(): bool
+    {
+        return (bool) $this->email_updates;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUpdatedAt(): string
+    {
+        return $this->updated_at;
+    }
 }

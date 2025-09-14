@@ -18,6 +18,7 @@ return function (RouteCollector $r) {
     // Rutas de usuario
     $r->get('/profile', ['App\Controllers\UserController', 'profile', 'middleware' => ['auth']]);
     $r->post('/profile', ['App\Controllers\UserController', 'updateProfile', 'middleware' => ['auth']]);
+    $r->get('/user/activities', ['App\Controllers\UserController', 'activities', 'middleware' => ['auth']]);
 
     // Rutas de reservas
     $r->get('/user/reservations', ['App\Controllers\UserController', 'reservations', 'middleware' => ['auth']]);

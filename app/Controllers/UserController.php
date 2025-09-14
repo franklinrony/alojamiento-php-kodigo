@@ -7,6 +7,8 @@ use App\Services\IRoleService;
 use App\Services\IReservationService;
 use App\Services\IAccommodationService;
 use App\Services\ILoggerService;
+use App\Services\IUserActivityService;
+use App\Services\IUserPreferenceService;
 use App\Utilities\IRequestValidator;
 use App\Utilities\IAuthenticator;
 
@@ -42,6 +44,16 @@ class UserController extends BaseController
     private $logger;
 
     /**
+     * @var IUserActivityService
+     */
+    private $userActivityService;
+
+    /**
+     * @var IUserPreferenceService
+     */
+    private $userPreferenceService;
+
+    /**
      * @param \Twig\Environment $twig
      * @param IUserService $userService
      * @param IRoleService $roleService
@@ -50,6 +62,8 @@ class UserController extends BaseController
      * @param IRequestValidator $validator
      * @param IAuthenticator $authenticator
      * @param ILoggerService $logger
+     * @param IUserActivityService $userActivityService
+     * @param IUserPreferenceService $userPreferenceService
      */
     public function __construct(
         \Twig\Environment $twig,
@@ -59,7 +73,9 @@ class UserController extends BaseController
         IAccommodationService $accommodationService,
         IRequestValidator $validator,
         IAuthenticator $authenticator,
-        ILoggerService $logger
+        ILoggerService $logger,
+        IUserActivityService $userActivityService,
+        IUserPreferenceService $userPreferenceService
     ) {
         parent::__construct($twig, $validator, $authenticator);
         $this->userService = $userService;
@@ -67,6 +83,8 @@ class UserController extends BaseController
         $this->reservationService = $reservationService;
         $this->accommodationService = $accommodationService;
         $this->logger = $logger;
+        $this->userActivityService = $userActivityService;
+        $this->userPreferenceService = $userPreferenceService;
     }
 
     /**
@@ -92,10 +110,17 @@ class UserController extends BaseController
         // Obtener estadísticas del usuario
         $stats = $this->reservationService->getReservationStats($userId);
 
+        // Obtener preferencias del usuario
+        $preferences = $this->userPreferenceService->getUserPreferences($userId);
+
+        // Log actividad de visualización de perfil
+        $this->userActivityService->logActivity($userId, 'profile_viewed', 'Usuario visualizó su perfil');
+
         $this->render('user/profile.twig', [
             'pageTitle' => 'Mi Perfil',
             'user' => $user,
-            'stats' => $stats
+            'stats' => $stats,
+            'preferences' => $preferences
         ]);
     }
 
@@ -197,18 +222,33 @@ class UserController extends BaseController
             $updateData['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
         }
 
-        try {
-            $user = $this->userService->updateUser($userId, $updateData);
-            
-            if (!$user) {
-                $this->flash('error', 'Error al actualizar el perfil');
+            try {
+                $user = $this->userService->updateUser($userId, $updateData);
+                
+                if (!$user) {
+                    $this->flash('error', 'Error al actualizar el perfil');
+                    header('Location: /profile');
+                    exit;
+                }
+
+                // Actualizar preferencias si se proporcionan
+                if (isset($data['notifications']) || isset($data['email_updates'])) {
+                    $preferencesData = [];
+                    if (isset($data['notifications'])) {
+                        $preferencesData['notifications'] = $data['notifications'];
+                    }
+                    if (isset($data['email_updates'])) {
+                        $preferencesData['email_updates'] = (bool) $data['email_updates'];
+                    }
+                    $this->userPreferenceService->updatePreferences($userId, $preferencesData);
+                }
+
+                // Log actividad de actualización de perfil
+                $this->userActivityService->logActivity($userId, 'profile_updated', 'Usuario actualizó su perfil');
+
+                $this->flash('success', 'Perfil actualizado exitosamente');
                 header('Location: /profile');
                 exit;
-            }
-
-            $this->flash('success', 'Perfil actualizado exitosamente');
-            header('Location: /profile');
-            exit;
         } catch (\RuntimeException $e) {
             $this->flash('error', $e->getMessage());
             header('Location: /profile');
@@ -374,6 +414,85 @@ class UserController extends BaseController
     }
 
     /**
+     * Actualiza las preferencias del usuario
+     */
+    public function updatePreferences(): void
+    {
+        if (!$this->authenticator->isAuthenticated()) {
+            $this->flash('error', 'No autorizado');
+            header('Location: /auth/login');
+            exit;
+        }
+
+        if (!$this->isMethod('POST')) {
+            $this->flash('error', 'Método no permitido');
+            header('Location: /profile');
+            exit;
+        }
+
+        $userId = $this->authenticator->getUserId();
+        $data = $_POST;
+
+        // Validar datos
+        $rules = [
+            'notifications' => ['type' => 'string', 'in' => ['all', 'none', 'email_only']],
+            'email_updates' => ['type' => 'boolean']
+        ];
+
+        if (!$this->validator->validate($data, $rules)) {
+            $this->flash('error', 'Errores de validación: ' . implode(', ', $this->validator->getErrors()));
+            header('Location: /profile');
+            exit;
+        }
+
+        $data = $this->validator->sanitize($data);
+
+        try {
+            // Convertir email_updates a boolean
+            $data['email_updates'] = isset($data['email_updates']) && $data['email_updates'];
+
+            $success = $this->userPreferenceService->updatePreferences($userId, $data);
+            
+            if (!$success) {
+                $this->flash('error', 'Error al actualizar las preferencias');
+                header('Location: /profile');
+                exit;
+            }
+
+            // Log actividad de actualización de preferencias
+            $this->userActivityService->logActivity($userId, 'preferences_updated', 'Usuario actualizó sus preferencias');
+
+            $this->flash('success', 'Preferencias actualizadas exitosamente');
+            header('Location: /profile');
+            exit;
+        } catch (\RuntimeException $e) {
+            $this->flash('error', $e->getMessage());
+            header('Location: /profile');
+            exit;
+        }
+    }
+
+    /**
+     * Muestra las actividades del usuario
+     */
+    public function activities(): void
+    {
+        if (!$this->authenticator->isAuthenticated()) {
+            $this->flash('error', 'Debes iniciar sesión para ver tus actividades');
+            header('Location: /auth/login');
+            exit;
+        }
+
+        $userId = $this->authenticator->getUserId();
+        $activities = $this->userActivityService->getActivitiesByUser($userId);
+
+        $this->render('user/activities.twig', [
+            'pageTitle' => 'Mi Actividad',
+            'activities' => $activities
+        ]);
+    }
+
+    /**
      * Muestra el formulario para crear una nueva reserva
      */
     public function createReservationForm(): void
@@ -462,6 +581,9 @@ class UserController extends BaseController
                 header('Location: /user/reservations/create?accommodation_id=' . $data['accommodation_id']);
                 exit;
             }
+
+            // Log actividad de creación de reserva
+            $this->userActivityService->logActivity($data['user_id'], 'reservation_created', "Reserva creada para alojamiento ID: {$data['accommodation_id']}");
 
             $this->flash('success', 'Reserva creada exitosamente');
             header('Location: /user/reservations');
