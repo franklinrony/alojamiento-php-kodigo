@@ -26,9 +26,27 @@ class UserActivityRepository extends BaseRepository implements IUserActivityRepo
     /**
      * @inheritDoc
      */
-    public function all()
+    public function all(?int $limit = null, ?int $offset = null)
     {
-        $stmt = $this->db->query("SELECT * FROM user_activities");
+        $sql = "SELECT * FROM user_activities";
+        
+        if ($limit !== null) {
+            $sql .= " LIMIT :limit";
+            if ($offset !== null) {
+                $sql .= " OFFSET :offset";
+            }
+        }
+        
+        $stmt = $this->db->prepare($sql);
+        
+        if ($limit !== null) {
+            $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+            if ($offset !== null) {
+                $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+            }
+        }
+        
+        $stmt->execute();
         return array_map([$this, 'mapToModel'], $stmt->fetchAll());
     }
 
