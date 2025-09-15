@@ -273,16 +273,21 @@ class Reservation extends Model
         $checkIn = new \DateTime($this->check_in_date);
         $checkOut = new \DateTime($this->check_out_date);
         $today = new \DateTime();
-        
+
+        // Normalizar a fecha (00:00) para evitar falsos negativos por la hora actual
+        $checkIn->setTime(0, 0, 0);
+        $checkOut->setTime(0, 0, 0);
+        $today->setTime(0, 0, 0);
+
         return $checkIn >= $today && $checkOut > $checkIn;
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getCreatedAt(): string
+    public function getCreatedAt(): ?string
     {
-        return $this->created_at;
+        return $this->created_at ?? null;
     }
 
     /**

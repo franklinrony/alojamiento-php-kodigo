@@ -68,17 +68,41 @@ LOG_ENABLED=true
 LOG_LEVEL=info
 ```
 
-4) Ejecutar migraciones y seeders
+4) Base de datos: migraciones y seeders (elige UNA opción)
 
+Opción A — Composer (recomendada):
+```bash
+# Estado final recomendado (UserSeeder + AccommodationSeeder)
+composer db:setup
+
+# Ejecutar TODOS los seeders en orden explícito
+composer db:seed:all
+```
+
+Opción B — Phinx directamente:
 ```bash
 # Windows (desde la raíz del proyecto)
-vendor\bin\phinx.bat migrate -e development -c phinx.php
-vendor\bin\phinx.bat seed:run -e development -c phinx.php -s UserSeeder
+vendor\bin\phinx.bat migrate -e development -c phinx.php ^&^& vendor\bin\phinx.bat seed:run -e development -c phinx.php -s UserSeeder -s AccommodationSeeder
 
 # Linux/macOS
-vendor/bin/phinx migrate -e development -c phinx.php
-vendor/bin/phinx seed:run -e development -c phinx.php -s UserSeeder
+vendor/bin/phinx migrate -e development -c phinx.php && vendor/bin/phinx seed:run -e development -c phinx.php -s UserSeeder -s AccommodationSeeder
+
+# Alternativa: ejecutar TODOS en orden explícito
+# Windows
+vendor\bin\phinx.bat seed:run -e development -c phinx.php -s PermissionsSeeder -s PermissionSeeder -s UserSeeder -s AccommodationSeeder
+# Linux/macOS
+vendor/bin/phinx seed:run -e development -c phinx.php -s PermissionsSeeder -s PermissionSeeder -s UserSeeder -s AccommodationSeeder
 ```
+
+Opción C — Importar SQL (carpeta `scripts/`):
+```bash
+# Importar estructura y datos iniciales
+mysql -h 127.0.0.1 -u root -p alojamientos < scripts/alojamientos.sql
+```
+Con phpMyAdmin: selecciona la BD `alojamientos` → pestaña Importar → elige `scripts/alojamientos.sql` → Ejecutar.
+
+Nota sobre orden de seeders: si ejecutas seeders individuales, usa este orden para evitar errores de roles/permisos:
+`PermissionsSeeder` → `PermissionSeeder` → `UserSeeder` → `AccommodationSeeder`. Usar `UserSeeder` cubre roles, permisos y usuarios desde cero.
 
 5) Entorno de desarrollo recomendado en Windows con XAMPP (VirtualHost)
 
@@ -166,9 +190,6 @@ Rutas clave:
 ```bash
 # Migraciones (desarrollo)
 vendor/bin/phinx migrate -e development -c phinx.php
-
-# Seeders (desarrollo)
-vendor/bin/phinx seed:run -e development -c phinx.php -s UserSeeder
 
 # Crear nueva migración
 vendor/bin/phinx create AddSomethingToTables -c phinx.php

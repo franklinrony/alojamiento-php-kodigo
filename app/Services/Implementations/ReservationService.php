@@ -344,6 +344,11 @@ class ReservationService implements IReservationService
             $checkOut = new \DateTime($data['check_out_date']);
             $today = new \DateTime();
 
+            // Normalizar a medianoche para comparaciones por fecha (no hora)
+            $checkIn->setTime(0, 0, 0);
+            $checkOut->setTime(0, 0, 0);
+            $today->setTime(0, 0, 0);
+
             if ($checkIn < $today) {
                 $errors[] = "La fecha de entrada no puede ser anterior a hoy";
             }
@@ -353,7 +358,7 @@ class ReservationService implements IReservationService
             }
 
             // Validar que no sea más de 1 año en el futuro
-            $maxDate = (new \DateTime())->add(new \DateInterval('P1Y'));
+            $maxDate = (new \DateTime())->add(new \DateInterval('P1Y'))->setTime(0, 0, 0);
             if ($checkIn > $maxDate) {
                 $errors[] = "No se pueden hacer reservas con más de 1 año de anticipación";
             }
