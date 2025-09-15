@@ -122,50 +122,6 @@
                             Ver Sitio
                         </a>
                     </li>
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ path_for('/admin/accommodations') }}">
-                            <i class="bi bi-house-door me-1"></i>Alojamientos
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ path_for('/admin/users') }}">
-                            <i class="bi bi-people me-1"></i>Usuarios
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ path_for('/') }}">
-                            <i class="bi bi-globe me-1"></i>Ver Sitio
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ path_for('/profile') }}">
-                            <i class="bi bi-person-circle me-1"></i>{{ auth.user.name }}
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ path_for('/auth/logout') }}" class="nav-link" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                            <i class="bi bi-box-arrow-right me-1"></i>Cerrar Sesión
-                        </a>
-                        <form id="logout-form" action="{{ path_for('/auth/logout') }}" method="POST" class="d-none">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        </form>
-                    </li>
-=======
-                    {% if auth.isAuthenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="/profile">
-                                <i class="bi bi-gear me-1"></i>
-                                Mi Perfil
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="nav-link">
-                                <i class="bi bi-box-arrow-right me-1"></i>
-                                Cerrar Sesión
-                            </a>
-=======
                     {% if auth.isAuthenticated %}
                         <!-- User Dropdown Menu -->
                         <li class="nav-item dropdown">
@@ -207,16 +163,11 @@
                                     </a>
                                 </li>
                             </ul>
->>>>>>> temp
                             <form id="logout-form" action="/auth/logout" method="POST" class="d-none">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                             </form>
                         </li>
                     {% endif %}
-<<<<<<< HEAD
->>>>>>> Stashed changes
-=======
->>>>>>> temp
                 </ul>
             </div>
         </div>
