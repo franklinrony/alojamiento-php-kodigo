@@ -12,6 +12,7 @@
 # IDE and Editor files
 .cursor/
 .roo/
+.roomodes
 .taskmaster/
 .vscode/
 .idea/
