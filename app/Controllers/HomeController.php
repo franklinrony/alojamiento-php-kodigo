@@ -53,7 +53,7 @@ class HomeController extends BaseController
         $criteria = ['limit' => 4, 'offset' => 0];
         $weekendOffers = $this->accommodationService->searchAccommodations($criteria);
 
-        $this->render('home/simple.twig', [
+        $this->render('home/index.twig', [
             'pageTitle' => 'Alojamientos - Encuentra tu próximo alojamiento',
             'user' => $user,
             'featuredAccommodations' => $featuredAccommodations,
