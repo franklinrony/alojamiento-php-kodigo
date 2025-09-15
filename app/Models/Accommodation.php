@@ -134,4 +134,23 @@ class Accommodation extends Model
         $this->creator = $creator;
         $this->created_by = $creator ? $creator->getId() : null;
     }
+
+    /**
+     * Convierte el modelo a un array excluyendo propiedades relacionadas
+     *
+     * @return array
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'description' => $this->description,
+            'location' => $this->location,
+            'price' => $this->price,
+            'created_by' => $this->created_by,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at
+        ];
+    }
 }

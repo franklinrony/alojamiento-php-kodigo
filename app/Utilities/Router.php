@@ -4,8 +4,8 @@ namespace App\Utilities;
 
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
-use League\Container\Container;
-use function FastRoute\simpleDispatcher;
+use DI\Container;
+use function FastRoute\cachedDispatcher;
 
 /**
  * Class Router
@@ -33,11 +33,23 @@ class Router
     }
 
     /**
-     * Inicializa el despachador de rutas
+     * Inicializa el despachador de rutas con cache
      */
     private function initializeDispatcher(): void
     {
-        $this->dispatcher = simpleDispatcher(function(RouteCollector $r) {
+        // Configurar el archivo de cache para FastRoute
+        $cacheFile = PathHelper::fromRoot('var/cache/fast_route_dispatcher.cache');
+        
+        // Asegurar que el directorio de cache existe
+        $cacheDir = dirname($cacheFile);
+        if (!is_dir($cacheDir)) {
+            mkdir($cacheDir, 0755, true);
+        }
+        
+        // Determinar si el cache está habilitado basado en el entorno
+        $cacheEnabled = $_ENV['APP_DEBUG'] !== 'true' && $_ENV['FASTROUTE_CACHE_ENABLED'] !== 'false';
+        
+        $this->dispatcher = cachedDispatcher(function(RouteCollector $r) {
             // Cargar rutas web
             $webRoutes = require PathHelper::fromRoot('config/routes/web.php');
             $webRoutes($r);
@@ -45,7 +57,10 @@ class Router
             // Cargar rutas API
             $apiRoutes = require PathHelper::fromRoot('config/routes/api.php');
             $apiRoutes($r);
-        });
+        }, [
+            'cacheFile' => $cacheFile,
+            'cacheDisabled' => !$cacheEnabled,
+        ]);
     }
 
     /**
@@ -57,7 +72,14 @@ class Router
         $httpMethod = $_SERVER['REQUEST_METHOD'];
         $uri = $this->getUri();
         
-        error_log("Procesando ruta: {$uri} con método {$httpMethod}");
+        // Log de la ruta usando el sistema de logging
+        if ($this->container->has(\App\Services\ILoggerService::class)) {
+            $logger = $this->container->get(\App\Services\ILoggerService::class);
+            $logger->debug("Procesando ruta", [
+                'uri' => $uri,
+                'method' => $httpMethod
+            ]);
+        }
         
         // Obtener información de la ruta
         $routeInfo = $this->dispatcher->dispatch($httpMethod, $uri);
@@ -69,15 +91,10 @@ class Router
                     header('Content-Type: application/json');
                     echo json_encode(['error' => true, 'message' => 'Ruta no encontrada']);
                 } else {
-                    // Para rutas web, mostrar una página 404
-                    if ($this->container->has(\Twig\Environment::class)) {
-                        $twig = $this->container->get(\Twig\Environment::class);
-                        echo $twig->render('errors/404.twig', [
-                            'pageTitle' => 'Página no encontrada'
-                        ]);
-                    } else {
-                        echo 'Página no encontrada';
-                    }
+                    // Para rutas web, usar ErrorRenderer para configurar variables globales
+                    ErrorRenderer::renderErrorPage($this->container, 'errors/404.twig', [
+                        'pageTitle' => 'Página no encontrada'
+                    ]);
                 }
                 break;
 
@@ -87,15 +104,10 @@ class Router
                     header('Content-Type: application/json');
                     echo json_encode(['error' => true, 'message' => 'Método no permitido']);
                 } else {
-                    // Para rutas web, mostrar una página 405
-                    if ($this->container->has(\Twig\Environment::class)) {
-                        $twig = $this->container->get(\Twig\Environment::class);
-                        echo $twig->render('errors/405.twig', [
-                            'pageTitle' => 'Método no permitido'
-                        ]);
-                    } else {
-                        echo 'Método no permitido';
-                    }
+                    // Para rutas web, usar ErrorRenderer para configurar variables globales
+                    ErrorRenderer::renderErrorPage($this->container, 'errors/405.twig', [
+                        'pageTitle' => 'Método no permitido'
+                    ]);
                 }
                 break;
 
@@ -165,10 +177,8 @@ class Router
      */
     private function resolveController(string $controllerClass): object
     {
-        // Verificar si el controlador está registrado en el contenedor
-        if (!$this->container->has($controllerClass)) {
-            throw new \RuntimeException("Controlador {$controllerClass} no está registrado en el contenedor de dependencias");
-        }
+        // PHP-DI maneja automáticamente la resolución de dependencias
+        // No necesitamos verificar si está registrado
 
         // Resolver el controlador usando el contenedor
         return $this->container->get($controllerClass);
@@ -237,5 +247,59 @@ class Router
         $uri = $this->getUri();
         return strpos($uri, '/api/') === 0 || 
                strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false;
+    }
+
+    /**
+     * Limpia el cache de FastRoute
+     * Útil para desarrollo cuando se modifican las rutas
+     *
+     * @return bool
+     */
+    public static function clearCache(): bool
+    {
+        $cacheFile = PathHelper::fromRoot('var/cache/fast_route_dispatcher.cache');
+        
+        if (file_exists($cacheFile)) {
+            return unlink($cacheFile);
+        }
+        
+        return true; // No existe el archivo, consideramos que está "limpio"
+    }
+
+    /**
+     * Verifica si el cache de FastRoute existe
+     *
+     * @return bool
+     */
+    public static function cacheExists(): bool
+    {
+        $cacheFile = PathHelper::fromRoot('var/cache/fast_route_dispatcher.cache');
+        return file_exists($cacheFile);
+    }
+
+    /**
+     * Obtiene información sobre el cache de FastRoute
+     *
+     * @return array
+     */
+    public static function getCacheInfo(): array
+    {
+        $cacheFile = PathHelper::fromRoot('var/cache/fast_route_dispatcher.cache');
+        
+        if (!file_exists($cacheFile)) {
+            return [
+                'exists' => false,
+                'size' => 0,
+                'modified' => null,
+                'path' => $cacheFile
+            ];
+        }
+        
+        return [
+            'exists' => true,
+            'size' => filesize($cacheFile),
+            'modified' => date('Y-m-d H:i:s', filemtime($cacheFile)),
+            'path' => $cacheFile
+        ];
     }
 }

@@ -9,7 +9,7 @@ class TwigExtensions extends AbstractExtension
 {
     private $authenticator;
 
-    public function __construct(IAuthenticator $authenticator)
+    public function __construct(?IAuthenticator $authenticator = null)
     {
         $this->authenticator = $authenticator;
     }
@@ -70,6 +70,14 @@ class TwigExtensions extends AbstractExtension
 
     public function getAuth(): array
     {
+        if ($this->authenticator === null) {
+            return [
+                'isAuthenticated' => false,
+                'user' => null,
+                'hasPermission' => function($permission) { return false; }
+            ];
+        }
+        
         return [
             'isAuthenticated' => $this->authenticator->isAuthenticated(),
             'user' => $this->getUser(),
@@ -79,7 +87,7 @@ class TwigExtensions extends AbstractExtension
 
     private function getUser(): ?array
     {
-        if (!$this->authenticator->isAuthenticated()) {
+        if ($this->authenticator === null || !$this->authenticator->isAuthenticated()) {
             return null;
         }
 
@@ -93,7 +101,7 @@ class TwigExtensions extends AbstractExtension
 
     public function hasPermission(string $permission): bool
     {
-        if (!$this->authenticator->isAuthenticated() || empty($_SESSION['permissions'])) {
+        if ($this->authenticator === null || !$this->authenticator->isAuthenticated() || empty($_SESSION['permissions'])) {
             return false;
         }
 

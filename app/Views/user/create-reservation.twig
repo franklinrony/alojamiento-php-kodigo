@@ -25,8 +25,17 @@
                                     <label for="accommodation_id" class="form-label">Alojamiento</label>
                                     <select class="form-select" id="accommodation_id" name="accommodation_id" required>
                                         <option value="">Selecciona un alojamiento</option>
-                                        {% if accommodation %}
-                                        <option value="{{ accommodation.id }}" selected>{{ accommodation.name }}</option>
+                                        {% if allAccommodations is defined and allAccommodations|length > 0 %}
+                                            {% for acc in allAccommodations %}
+                                            <option value="{{ acc.id }}" 
+                                                    {% if accommodation and accommodation.id == acc.id %}selected{% endif %}
+                                                    data-price="{{ acc.price }}"
+                                                    data-location="{{ acc.location }}">
+                                                {{ acc.name }} - {{ acc.location }} - ${{ acc.price|number_format(2) }}
+                                            </option>
+                                            {% endfor %}
+                                        {% else %}
+                                            <option value="" disabled>No hay alojamientos disponibles</option>
                                         {% endif %}
                                     </select>
                                 </div>
@@ -118,13 +127,18 @@ document.getElementById('check_in_date').addEventListener('change', updateReserv
 document.getElementById('check_out_date').addEventListener('change', updateReservationSummary);
 document.getElementById('guests').addEventListener('change', updateReservationSummary);
 
+// Event listeners para verificar disponibilidad
+document.getElementById('accommodation_id').addEventListener('change', checkAvailability);
+document.getElementById('check_in_date').addEventListener('change', checkAvailability);
+document.getElementById('check_out_date').addEventListener('change', checkAvailability);
+
 function loadAccommodations() {
-    // En una implementación real, esto cargaría los alojamientos desde la API
-    // Por ahora, si no hay alojamiento preseleccionado, mostramos un mensaje
+    // Los alojamientos ya están cargados desde el servidor
     const accommodationSelect = document.getElementById('accommodation_id');
+    
+    // Verificar si hay alojamientos disponibles
     if (accommodationSelect.children.length === 1) {
-        accommodationSelect.innerHTML = '<option value="">Cargando alojamientos...</option>';
-        // Aquí se haría una llamada AJAX para cargar los alojamientos
+        accommodationSelect.innerHTML = '<option value="">No hay alojamientos disponibles</option>';
     }
 }
 
@@ -159,8 +173,9 @@ function updateReservationSummary() {
     document.getElementById('summaryCheckOut').textContent = formatDate(checkOutDate);
     document.getElementById('summaryNights').textContent = nights + ' ' + (nights == 1 ? 'noche' : 'noches');
 
-    // Calcular precio total (esto debería venir de la API)
-    const pricePerNight = {{ accommodation.price ?? 0 }};
+    // Obtener precio del alojamiento seleccionado
+    const selectedOption = document.getElementById('accommodation_id').selectedOptions[0];
+    const pricePerNight = parseFloat(selectedOption.dataset.price) || 0;
     const totalPrice = pricePerNight * nights;
     document.getElementById('summaryTotal').textContent = '$' + totalPrice.toFixed(2);
 
@@ -176,6 +191,59 @@ function formatDate(dateString) {
         month: 'long',
         day: 'numeric'
     });
+}
+
+function checkAvailability() {
+    const accommodationId = document.getElementById('accommodation_id').value;
+    const checkInDate = document.getElementById('check_in_date').value;
+    const checkOutDate = document.getElementById('check_out_date').value;
+
+    // Solo verificar si todos los campos están completos
+    if (!accommodationId || !checkInDate || !checkOutDate) {
+        hideAvailabilityMessage();
+        return;
+    }
+
+    // Validar fechas
+    if (new Date(checkOutDate) <= new Date(checkInDate)) {
+        hideAvailabilityMessage();
+        return;
+    }
+
+    // Hacer llamada AJAX para verificar disponibilidad
+    fetch(`/api/reservations/availability/${accommodationId}?check_in=${checkInDate}&check_out=${checkOutDate}`)
+        .then(response => response.json())
+        .then(data => {
+            showAvailabilityMessage(data.available, data.message);
+        })
+        .catch(error => {
+            console.error('Error checking availability:', error);
+            hideAvailabilityMessage();
+        });
+}
+
+function showAvailabilityMessage(isAvailable, message) {
+    // Remover mensaje anterior si existe
+    hideAvailabilityMessage();
+
+    const availabilityDiv = document.createElement('div');
+    availabilityDiv.id = 'availability-message';
+    availabilityDiv.className = `alert ${isAvailable ? 'alert-success' : 'alert-warning'}`;
+    availabilityDiv.innerHTML = `
+        <i class="fas ${isAvailable ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+        ${message}
+    `;
+
+    // Insertar después del campo de alojamiento
+    const accommodationField = document.querySelector('.mb-3');
+    accommodationField.parentNode.insertBefore(availabilityDiv, accommodationField.nextSibling);
+}
+
+function hideAvailabilityMessage() {
+    const existingMessage = document.getElementById('availability-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
 }
 
 // Validación del formulario

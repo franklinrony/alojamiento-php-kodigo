@@ -45,19 +45,19 @@ class HomeController extends BaseController
             $user = $this->authenticator->getUser();
         }
 
-        // Obtener alojamientos para mostrar en la landing page
-        $accommodations = $this->accommodationService->getAllAccommodations();
-        
-        // Limitar a 8 alojamientos para la sección principal
-        $featuredAccommodations = array_slice($accommodations, 0, 8);
+        // Obtener solo los alojamientos necesarios para la landing page (optimizado)
+        $criteria = ['limit' => 8, 'offset' => 0];
+        $featuredAccommodations = $this->accommodationService->searchAccommodations($criteria);
         
         // Obtener alojamientos para ofertas de fin de semana (simular descuentos)
-        $weekendOffers = array_slice($accommodations, 0, 4);
+        $criteria = ['limit' => 4, 'offset' => 0];
+        $weekendOffers = $this->accommodationService->searchAccommodations($criteria);
 
-        $this->render('home/simple.twig', [
+        $this->render('home/index.twig', [
             'pageTitle' => 'Alojamientos - Encuentra tu próximo alojamiento',
             'user' => $user,
-            'accommodations' => $accommodations
+            'featuredAccommodations' => $featuredAccommodations,
+            'weekendOffers' => $weekendOffers
         ]);
     }
 }

@@ -6,6 +6,9 @@ use App\Services\IUserService;
 use App\Services\IRoleService;
 use App\Services\IReservationService;
 use App\Services\IAccommodationService;
+use App\Services\ILoggerService;
+use App\Services\IUserActivityService;
+use App\Services\IUserPreferenceService;
 use App\Utilities\IRequestValidator;
 use App\Utilities\IAuthenticator;
 
@@ -35,6 +38,20 @@ class UserController extends BaseController
      */
     private $accommodationService;
 
+    /**
+     * @var ILoggerService
+     */
+    private $logger;
+
+    /**
+     * @var IUserActivityService
+     */
+    private $userActivityService;
+
+    /**
+     * @var IUserPreferenceService
+     */
+    private $userPreferenceService;
 
     /**
      * @param \Twig\Environment $twig
@@ -44,6 +61,9 @@ class UserController extends BaseController
      * @param IAccommodationService $accommodationService
      * @param IRequestValidator $validator
      * @param IAuthenticator $authenticator
+     * @param ILoggerService $logger
+     * @param IUserActivityService $userActivityService
+     * @param IUserPreferenceService $userPreferenceService
      */
     public function __construct(
         \Twig\Environment $twig,
@@ -52,13 +72,19 @@ class UserController extends BaseController
         IReservationService $reservationService,
         IAccommodationService $accommodationService,
         IRequestValidator $validator,
-        IAuthenticator $authenticator
+        IAuthenticator $authenticator,
+        ILoggerService $logger,
+        IUserActivityService $userActivityService,
+        IUserPreferenceService $userPreferenceService
     ) {
         parent::__construct($twig, $validator, $authenticator);
         $this->userService = $userService;
         $this->roleService = $roleService;
         $this->reservationService = $reservationService;
         $this->accommodationService = $accommodationService;
+        $this->logger = $logger;
+        $this->userActivityService = $userActivityService;
+        $this->userPreferenceService = $userPreferenceService;
     }
 
     /**
@@ -81,9 +107,20 @@ class UserController extends BaseController
             exit;
         }
 
+        // Obtener estadísticas del usuario
+        $stats = $this->reservationService->getReservationStats($userId);
+
+        // Obtener preferencias del usuario
+        $preferences = $this->userPreferenceService->getUserPreferences($userId);
+
+        // Log actividad de visualización de perfil
+        $this->userActivityService->logActivity($userId, 'profile_viewed', 'Usuario visualizó su perfil');
+
         $this->render('user/profile.twig', [
             'pageTitle' => 'Mi Perfil',
-            'user' => $user
+            'user' => $user,
+            'stats' => $stats,
+            'preferences' => $preferences
         ]);
     }
 
@@ -126,7 +163,7 @@ class UserController extends BaseController
 
         if (!$this->isMethod('POST')) {
             $this->flash('error', 'Método no permitido');
-            header('Location: /user/profile/edit');
+            header('Location: /profile');
             exit;
         }
 
@@ -135,35 +172,86 @@ class UserController extends BaseController
         // Reglas de validación para actualización de perfil
         $rules = [
             'name' => ['type' => 'string', 'min' => 2],
-            'email' => ['type' => 'string', 'email' => true],
-            'current_password' => ['type' => 'string', 'min' => 6],
-            'new_password' => ['type' => 'string', 'min' => 6]
+            'email' => ['type' => 'string', 'email' => true]
         ];
 
         if (!$this->validator->validate($data, $rules)) {
             $this->flash('error', 'Errores de validación: ' . implode(', ', $this->validator->getErrors()));
-            header('Location: /user/profile/edit');
+            header('Location: /profile');
             exit;
+        }
+
+        // Validación adicional para contraseñas
+        if (!empty($data['password']) || !empty($data['passwordConfirm'])) {
+            if (empty($data['password'])) {
+                $this->flash('error', 'Debes ingresar una nueva contraseña');
+                header('Location: /profile');
+                exit;
+            }
+            
+            if (empty($data['passwordConfirm'])) {
+                $this->flash('error', 'Debes confirmar la nueva contraseña');
+                header('Location: /profile');
+                exit;
+            }
+            
+            if (strlen($data['password']) < 8) {
+                $this->flash('error', 'La contraseña debe tener al menos 8 caracteres');
+                header('Location: /profile');
+                exit;
+            }
+            
+            if ($data['password'] !== $data['passwordConfirm']) {
+                $this->flash('error', 'Las contraseñas no coinciden');
+                header('Location: /profile');
+                exit;
+            }
         }
 
         $data = $this->validator->sanitize($data);
         $userId = $this->authenticator->getUserId();
 
-        try {
-            $user = $this->userService->updateUser($userId, $data);
-            
-            if (!$user) {
-                $this->flash('error', 'Error al actualizar el perfil');
-                header('Location: /user/profile/edit');
-                exit;
-            }
+        // Preparar datos para actualización
+        $updateData = [
+            'name' => $data['name'],
+            'email' => $data['email']
+        ];
 
-            $this->flash('success', 'Perfil actualizado exitosamente');
-            header('Location: /user/profile');
-            exit;
+        // Si se proporciona una nueva contraseña, incluirla hasheada
+        if (!empty($data['password'])) {
+            $updateData['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        }
+
+            try {
+                $user = $this->userService->updateUser($userId, $updateData);
+                
+                if (!$user) {
+                    $this->flash('error', 'Error al actualizar el perfil');
+                    header('Location: /profile');
+                    exit;
+                }
+
+                // Actualizar preferencias si se proporcionan
+                if (isset($data['notifications']) || isset($data['email_updates'])) {
+                    $preferencesData = [];
+                    if (isset($data['notifications'])) {
+                        $preferencesData['notifications'] = $data['notifications'];
+                    }
+                    if (isset($data['email_updates'])) {
+                        $preferencesData['email_updates'] = (bool) $data['email_updates'];
+                    }
+                    $this->userPreferenceService->updatePreferences($userId, $preferencesData);
+                }
+
+                // Log actividad de actualización de perfil
+                $this->userActivityService->logActivity($userId, 'profile_updated', 'Usuario actualizó su perfil');
+
+                $this->flash('success', 'Perfil actualizado exitosamente');
+                header('Location: /profile');
+                exit;
         } catch (\RuntimeException $e) {
             $this->flash('error', $e->getMessage());
-            header('Location: /user/profile/edit');
+            header('Location: /profile');
             exit;
         }
     }
@@ -266,15 +354,43 @@ class UserController extends BaseController
             exit;
         }
 
-        $userId = $this->authenticator->getUserId();
-        $reservations = $this->reservationService->getReservationsByUser($userId);
-        $stats = $this->reservationService->getReservationStats($userId);
+        try {
+            $userId = $this->authenticator->getUserId();
+            
+            // Obtener las reservas con manejo de errores
+            try {
+                $reservations = $this->reservationService->getReservationsByUser($userId);
+            } catch (\Exception $e) {
+                $this->logger->error("Error al obtener reservas: " . $e->getMessage());
+                $reservations = [];
+            }
+            
+            // Obtener las estadísticas con manejo de errores
+            try {
+                $stats = $this->reservationService->getReservationStats($userId);
+            } catch (\Exception $e) {
+                $this->logger->error("Error al obtener estadísticas: " . $e->getMessage());
+                $stats = [
+                    'total_reservations' => 0,
+                    'active_reservations' => 0,
+                    'cancelled_reservations' => 0,
+                    'completed_reservations' => 0,
+                    'total_spent_active' => 0,
+                    'total_spent_all' => 0
+                ];
+            }
 
-        $this->render('user/reservations.twig', [
-            'pageTitle' => 'Mis Reservas',
-            'reservations' => $reservations,
-            'stats' => $stats
-        ]);
+            $this->render('user/reservations.twig', [
+                'pageTitle' => 'Mis Reservas',
+                'reservations' => $reservations,
+                'stats' => $stats
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error("Error general en reservations: " . $e->getMessage());
+            $this->flash('error', 'Ha ocurrido un error al cargar las reservas. Por favor, inténtelo de nuevo.');
+            header('Location: /');
+            exit;
+        }
     }
 
     /**
@@ -294,6 +410,85 @@ class UserController extends BaseController
         $this->render('user/active-reservations.twig', [
             'pageTitle' => 'Reservas Activas',
             'reservations' => $reservations
+        ]);
+    }
+
+    /**
+     * Actualiza las preferencias del usuario
+     */
+    public function updatePreferences(): void
+    {
+        if (!$this->authenticator->isAuthenticated()) {
+            $this->flash('error', 'No autorizado');
+            header('Location: /auth/login');
+            exit;
+        }
+
+        if (!$this->isMethod('POST')) {
+            $this->flash('error', 'Método no permitido');
+            header('Location: /profile');
+            exit;
+        }
+
+        $userId = $this->authenticator->getUserId();
+        $data = $_POST;
+
+        // Validar datos
+        $rules = [
+            'notifications' => ['type' => 'string', 'in' => ['all', 'none', 'email_only']],
+            'email_updates' => ['type' => 'boolean']
+        ];
+
+        if (!$this->validator->validate($data, $rules)) {
+            $this->flash('error', 'Errores de validación: ' . implode(', ', $this->validator->getErrors()));
+            header('Location: /profile');
+            exit;
+        }
+
+        $data = $this->validator->sanitize($data);
+
+        try {
+            // Convertir email_updates a boolean
+            $data['email_updates'] = isset($data['email_updates']) && $data['email_updates'];
+
+            $success = $this->userPreferenceService->updatePreferences($userId, $data);
+            
+            if (!$success) {
+                $this->flash('error', 'Error al actualizar las preferencias');
+                header('Location: /profile');
+                exit;
+            }
+
+            // Log actividad de actualización de preferencias
+            $this->userActivityService->logActivity($userId, 'preferences_updated', 'Usuario actualizó sus preferencias');
+
+            $this->flash('success', 'Preferencias actualizadas exitosamente');
+            header('Location: /profile');
+            exit;
+        } catch (\RuntimeException $e) {
+            $this->flash('error', $e->getMessage());
+            header('Location: /profile');
+            exit;
+        }
+    }
+
+    /**
+     * Muestra las actividades del usuario
+     */
+    public function activities(): void
+    {
+        if (!$this->authenticator->isAuthenticated()) {
+            $this->flash('error', 'Debes iniciar sesión para ver tus actividades');
+            header('Location: /auth/login');
+            exit;
+        }
+
+        $userId = $this->authenticator->getUserId();
+        $activities = $this->userActivityService->getActivitiesByUser($userId);
+
+        $this->render('user/activities.twig', [
+            'pageTitle' => 'Mi Actividad',
+            'activities' => $activities
         ]);
     }
 
@@ -320,9 +515,25 @@ class UserController extends BaseController
             }
         }
 
+        // Obtener todos los alojamientos para el dropdown
+        try {
+            $allAccommodations = $this->accommodationService->getAllAccommodations();
+            $this->logger->info("Accommodations loaded for reservation form", [
+                'count' => count($allAccommodations),
+                'accommodations' => array_map(function($acc) {
+                    return ['id' => $acc->getId(), 'name' => $acc->getName(), 'location' => $acc->getLocation(), 'price' => $acc->getPrice()];
+                }, $allAccommodations)
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error("Error al obtener alojamientos para formulario de reserva: " . $e->getMessage());
+            $allAccommodations = [];
+            $this->flash('error', 'Error al cargar los alojamientos. Por favor, inténtelo de nuevo.');
+        }
+
         $this->render('user/create-reservation.twig', [
             'pageTitle' => 'Crear Reserva',
-            'accommodation' => $accommodation
+            'accommodation' => $accommodation,
+            'allAccommodations' => $allAccommodations
         ]);
     }
 
@@ -366,18 +577,69 @@ class UserController extends BaseController
             $reservation = $this->reservationService->createReservation($data);
             
             if (!$reservation) {
-                $this->flash('error', 'Error al crear la reserva. Verifica que el alojamiento esté disponible para las fechas seleccionadas.');
+                $this->flash('error', 'Error al crear la reserva. Verifica los datos ingresados e intenta nuevamente.');
                 header('Location: /user/reservations/create?accommodation_id=' . $data['accommodation_id']);
                 exit;
             }
+
+            // Log actividad de creación de reserva
+            $this->userActivityService->logActivity($data['user_id'], 'reservation_created', "Reserva creada para alojamiento ID: {$data['accommodation_id']}");
 
             $this->flash('success', 'Reserva creada exitosamente');
             header('Location: /user/reservations');
             exit;
         } catch (\RuntimeException $e) {
-            $this->flash('error', $e->getMessage());
+            $this->logger->error("Error creating reservation: " . $e->getMessage(), [
+                'user_id' => $data['user_id'],
+                'accommodation_id' => $data['accommodation_id'],
+                'data' => $data
+            ]);
+            $this->flash('error', 'Error al crear la reserva: ' . $e->getMessage());
             header('Location: /user/reservations/create?accommodation_id=' . $data['accommodation_id']);
             exit;
+        }
+    }
+
+    /**
+     * Verifica disponibilidad de un alojamiento (API endpoint)
+     */
+    public function checkAvailability(int $accommodationId): void
+    {
+        if (!$this->authenticator->isAuthenticated()) {
+            http_response_code(401);
+            echo json_encode(['error' => 'No autorizado']);
+            exit;
+        }
+
+        $checkIn = $_GET['check_in'] ?? null;
+        $checkOut = $_GET['check_out'] ?? null;
+
+        if (!$checkIn || !$checkOut) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Fechas de entrada y salida requeridas']);
+            exit;
+        }
+
+        try {
+            $available = $this->reservationService->isAccommodationAvailable($accommodationId, $checkIn, $checkOut);
+            
+            header('Content-Type: application/json');
+            echo json_encode([
+                'available' => $available,
+                'accommodation_id' => $accommodationId,
+                'check_in' => $checkIn,
+                'check_out' => $checkOut,
+                'message' => $available ? 'Disponible' : 'No disponible para las fechas seleccionadas'
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error("Error checking availability: " . $e->getMessage(), [
+                'accommodation_id' => $accommodationId,
+                'check_in' => $checkIn,
+                'check_out' => $checkOut
+            ]);
+            
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al verificar disponibilidad']);
         }
     }
 

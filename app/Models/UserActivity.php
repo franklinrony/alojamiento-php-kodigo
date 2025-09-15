@@ -12,6 +12,26 @@ class UserActivity extends Model
     protected static $table = 'user_activities';
 
     /**
+     * @var int
+     */
+    public $user_id;
+
+    /**
+     * @var string
+     */
+    public $type;
+
+    /**
+     * @var string|null
+     */
+    public $details;
+
+    /**
+     * @var string
+     */
+    public $created_at;
+
+    /**
      * @return string
      */
     public static function getTableName(): string
@@ -45,5 +65,37 @@ class UserActivity extends Model
         $data = $this->toArray();
         $user->fill(['id' => $data['user_id']]);
         return $user;
+    }
+
+    /**
+     * @return int
+     */
+    public function getUserId(): int
+    {
+        return (int) $this->user_id;
+    }
+
+    /**
+     * @return string
+     */
+    public function getType(): string
+    {
+        return $this->type ?? 'unknown';
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getDetails(): ?string
+    {
+        return $this->details;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCreatedAt(): string
+    {
+        return $this->created_at;
     }
 }

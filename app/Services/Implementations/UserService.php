@@ -66,7 +66,12 @@ class UserService implements IUserService
         
         // Establecer rol por defecto si no se proporciona
         if (!isset($filteredData['role_id'])) {
-            $filteredData['role_id'] = 2; // ID del rol 'user'
+            // Obtener el rol 'user' dinámicamente
+            $userRole = $this->roleRepository->findByName('user');
+            if (!$userRole) {
+                throw new \RuntimeException('No se encontró el rol de usuario por defecto');
+            }
+            $filteredData['role_id'] = $userRole->getId();
         }
         
         // Hash de la contraseña

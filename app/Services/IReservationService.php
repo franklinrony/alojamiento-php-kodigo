@@ -44,6 +44,14 @@ interface IReservationService
     public function getActiveReservationsByUser(int $userId): array;
 
     /**
+     * Obtiene estadísticas de reservas por usuario
+     *
+     * @param int $userId
+     * @return array
+     */
+    public function getReservationStats(int $userId): array;
+
+    /**
      * Obtiene una reserva por ID
      *
      * @param int $reservationId
@@ -80,12 +88,4 @@ interface IReservationService
      * @return array
      */
     public function validateReservationData(array $data): array;
-
-    /**
-     * Obtiene estadísticas de reservas por usuario
-     *
-     * @param int $userId
-     * @return array
-     */
-    public function getReservationStats(int $userId): array;
 }

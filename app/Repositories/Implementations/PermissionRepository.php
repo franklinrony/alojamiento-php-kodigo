@@ -42,8 +42,8 @@ class PermissionRepository extends BaseRepository implements IPermissionReposito
     public function getRoles(int $permissionId)
     {
         $sql = "SELECT r.* FROM roles r
-                INNER JOIN role_permissions rp ON r.id = rp.role_id
-                WHERE rp.permission_id = :permission_id";
+                INNER JOIN permission_role pr ON r.id = pr.role_id
+                WHERE pr.permission_id = :permission_id";
                 
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['permission_id' => $permissionId]);

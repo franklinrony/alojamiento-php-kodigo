@@ -18,18 +18,45 @@ class UserActivityRepository extends BaseRepository implements IUserActivityRepo
      */
     public function find($id)
     {
-        $stmt = $this->db->prepare("SELECT * FROM user_activities WHERE id = :id");
-        $stmt->execute(['id' => $id]);
-        return $stmt->fetch() ? $this->mapToModel($stmt->fetch()) : null;
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM user_activities WHERE id = :id");
+            $stmt->execute(['id' => $id]);
+            $result = $stmt->fetch();
+            
+            if ($result === false || $result === null) {
+                return null;
+            }
+            
+            return $this->mapToModel($result);
+        } catch (\Exception $e) {
+            // Log del error usando el sistema de logging
+            if (class_exists('\App\Services\ILoggerService')) {
+                try {
+                    $container = \App\Utilities\DiContainer::getInstance();
+                    if ($container->has(\App\Services\ILoggerService::class)) {
+                        $logger = $container->get(\App\Services\ILoggerService::class);
+                        $logger->error("Error en UserActivityRepository::find()", [
+                            'error' => $e->getMessage(),
+                            'id' => $id,
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine()
+                        ]);
+                    }
+                } catch (\Exception $logError) {
+                    // Fallback silencioso
+                }
+            }
+            return null;
+        }
     }
 
     /**
      * @inheritDoc
      */
-    public function all()
+    public function all(?int $limit = null, ?int $offset = null)
     {
-        $stmt = $this->db->query("SELECT * FROM user_activities");
-        return array_map([$this, 'mapToModel'], $stmt->fetchAll());
+        // Usar el método padre que ya maneja la lógica correctamente
+        return parent::all($limit, $offset);
     }
 
     /**
@@ -77,11 +104,6 @@ class UserActivityRepository extends BaseRepository implements IUserActivityRepo
         $stmt = $this->db->prepare("SELECT * FROM user_activities WHERE user_id = :user_id ORDER BY created_at DESC");
         $stmt->execute(['user_id' => $userId]);
         return array_map([$this, 'mapToModel'], $stmt->fetchAll());
-        $stmt = $this->db->prepare("SELECT * FROM $table WHERE user_id = :user_id ORDER BY created_at DESC");
-        $stmt->execute(['user_id' => $userId]);
-        $results = $stmt->fetchAll();
-
-        return array_map([$this, 'mapToModel'], $results);
     }
 
     /**

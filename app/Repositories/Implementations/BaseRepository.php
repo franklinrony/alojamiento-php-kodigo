@@ -53,8 +53,26 @@ abstract class BaseRepository implements IRepository
                 ]
             );
         } catch (PDOException $e) {
-            // Log del error para debugging
-            error_log("Error de conexión a la base de datos: " . $e->getMessage());
+            // Log del error usando el sistema de logging
+            if (class_exists('\App\Services\ILoggerService')) {
+                try {
+                    $container = \App\Utilities\DiContainer::getInstance();
+                    if ($container->has(\App\Services\ILoggerService::class)) {
+                        $logger = $container->get(\App\Services\ILoggerService::class);
+                        $logger->logDatabaseError("Error de conexión a la base de datos", [
+                            'message' => $e->getMessage(),
+                            'code' => $e->getCode(),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine()
+                        ]);
+                    }
+                } catch (\Exception $logError) {
+                    // Fallback a error_log si el sistema de logging falla
+                    error_log("Error de conexión a la base de datos: " . $e->getMessage());
+                }
+            } else {
+                error_log("Error de conexión a la base de datos: " . $e->getMessage());
+            }
             
             // Crear una excepción más específica
             throw new \App\Exceptions\DatabaseConnectionException(
@@ -85,13 +103,43 @@ abstract class BaseRepository implements IRepository
     /**
      * @inheritDoc
      */
-    public function all()
+    public function all(?int $limit = null, ?int $offset = null)
     {
         $table = $this->getTableName();
-        $stmt = $this->db->query("SELECT * FROM $table");
-        $results = $stmt->fetchAll();
+        $sql = "SELECT * FROM $table";
+        
+        if ($limit !== null) {
+            $sql .= " LIMIT :limit";
+            if ($offset !== null) {
+                $sql .= " OFFSET :offset";
+            }
+        }
+        
+        try {
+            $stmt = $this->db->prepare($sql);
+            
+            if ($limit !== null) {
+                $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+                if ($offset !== null) {
+                    $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+                }
+            }
+            
+            $stmt->execute();
+            
+            $results = $stmt->fetchAll();
 
-        return array_map([$this, 'mapToModel'], $results);
+            return array_map([$this, 'mapToModel'], $results);
+        } catch (\PDOException $e) {
+            $this->logDatabaseError("Error en consulta all()", [
+                'sql' => $sql,
+                'limit' => $limit,
+                'offset' => $offset,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode()
+            ]);
+            throw $e;
+        }
     }
 
     /**
@@ -159,6 +207,12 @@ abstract class BaseRepository implements IRepository
      */
     protected function getTableName(): string
     {
+        // Fallback al método anterior si está disponible
+        if (method_exists($this->model, 'getTableName')) {
+            return $this->model::getTableName();
+        }
+        
+        // Método por defecto basado en el nombre de la clase
         $modelClass = get_class($this->model);
         $parts = explode('\\', $modelClass);
         $modelName = end($parts);
@@ -170,9 +224,15 @@ abstract class BaseRepository implements IRepository
      *
      * @param array $data
      * @return Model
+     * @throws \InvalidArgumentException Si $data no es un array válido
      */
     protected function mapToModel(array $data): Model
     {
+        // Validar que $data sea un array válido
+        if (!is_array($data) || empty($data)) {
+            throw new \InvalidArgumentException('Los datos deben ser un array no vacío');
+        }
+        
         $modelClass = get_class($this->model);
         $model = new $modelClass();
 
@@ -184,8 +244,21 @@ abstract class BaseRepository implements IRepository
         // Usar el método fill para asignar las propiedades
         $model->fill($data);
 
-        // Log para depuración
-        error_log("Mapeando modelo: " . print_r($data, true));
+        // Log para depuración SOLO en modo debug y para errores
+        if ($_ENV['APP_DEBUG'] === 'true' && class_exists('\App\Services\ILoggerService')) {
+            try {
+                $container = \App\Utilities\DiContainer::getInstance();
+                if ($container->has(\App\Services\ILoggerService::class)) {
+                    $logger = $container->get(\App\Services\ILoggerService::class);
+                    $logger->debug("Mapeando modelo", [
+                        'model_class' => get_class($model),
+                        'data' => $data
+                    ]);
+                }
+            } catch (\Exception $logError) {
+                // Fallback silencioso para evitar errores en el mapeo
+            }
+        }
 
         return $model;
     }
@@ -199,5 +272,30 @@ abstract class BaseRepository implements IRepository
     protected function getSetterMethod(string $property): string
     {
         return 'set' . str_replace('_', '', ucwords($property, '_'));
+    }
+
+    /**
+     * Log de errores de base de datos
+     *
+     * @param string $message
+     * @param array $context
+     * @return void
+     */
+    protected function logDatabaseError(string $message, array $context = []): void
+    {
+        if (class_exists('\App\Services\ILoggerService')) {
+            try {
+                $container = \App\Utilities\DiContainer::getInstance();
+                if ($container->has(\App\Services\ILoggerService::class)) {
+                    $logger = $container->get(\App\Services\ILoggerService::class);
+                    $logger->logDatabaseError($message, $context);
+                }
+            } catch (\Exception $logError) {
+                // Fallback a error_log si el sistema de logging falla
+                error_log("Database Error: {$message} - " . json_encode($context));
+            }
+        } else {
+            error_log("Database Error: {$message} - " . json_encode($context));
+        }
     }
 }

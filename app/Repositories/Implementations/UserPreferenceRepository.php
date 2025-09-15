@@ -15,6 +15,33 @@ class UserPreferenceRepository extends BaseRepository implements IUserPreference
     /**
      * @inheritDoc
      */
+    public function all(?int $limit = null, ?int $offset = null)
+    {
+        $sql = "SELECT * FROM user_preferences";
+        
+        if ($limit !== null) {
+            $sql .= " LIMIT :limit";
+            if ($offset !== null) {
+                $sql .= " OFFSET :offset";
+            }
+        }
+        
+        $stmt = $this->db->prepare($sql);
+        
+        if ($limit !== null) {
+            $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+            if ($offset !== null) {
+                $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+            }
+        }
+        
+        $stmt->execute();
+        return array_map([$this, 'mapToModel'], $stmt->fetchAll());
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function getUserPreferences(int $userId): ?array
     {
         $table = $this->getTableName();

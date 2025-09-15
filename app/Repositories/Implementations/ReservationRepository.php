@@ -27,6 +27,14 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
     protected $modelClass = Reservation::class;
 
     /**
+     * Constructor
+     */
+    public function __construct(Reservation $model)
+    {
+        parent::__construct($model);
+    }
+
+    /**
      * Busca reservas por usuario
      *
      * @param int $userId
@@ -48,9 +56,13 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             $stmt->execute([$userId]);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
+            
             return $this->hydrateModels($results);
         } catch (PDOException $e) {
-            error_log("Error finding reservations by user ID: " . $e->getMessage());
+            $this->logDatabaseError("Error finding reservations by user ID", [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
             return [];
         }
     }
@@ -79,7 +91,10 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             
             return $this->hydrateModels($results);
         } catch (PDOException $e) {
-            error_log("Error finding reservations by accommodation ID: " . $e->getMessage());
+            $this->logDatabaseError("Error finding reservations by accommodation ID", [
+                'accommodation_id' => $accommodationId,
+                'error' => $e->getMessage()
+            ]);
             return [];
         }
     }
@@ -108,7 +123,10 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             
             return $this->hydrateModels($results);
         } catch (PDOException $e) {
-            error_log("Error finding active reservations by user ID: " . $e->getMessage());
+            $this->logDatabaseError("Error finding active reservations by user ID", [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
             return [];
         }
     }
@@ -147,13 +165,17 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             
             $sql .= " ORDER BY r.check_in_date ASC";
             
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             return $this->hydrateModels($results);
         } catch (PDOException $e) {
-            error_log("Error finding reservations by date range: " . $e->getMessage());
+            $this->logDatabaseError("Error finding reservations by date range", [
+                'start_date' => $checkIn,
+                'end_date' => $checkOut,
+                'error' => $e->getMessage()
+            ]);
             return [];
         }
     }
@@ -189,13 +211,18 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
                 $params[] = $excludeReservationId;
             }
             
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             
             return (int) $result['count'] > 0;
         } catch (PDOException $e) {
-            error_log("Error checking date conflict: " . $e->getMessage());
+            $this->logDatabaseError("Error checking date conflict", [
+                'accommodation_id' => $accommodationId,
+                'start_date' => $checkIn,
+                'end_date' => $checkOut,
+                'error' => $e->getMessage()
+            ]);
             return true; // En caso de error, asumir que hay conflicto por seguridad
         }
     }
@@ -224,7 +251,10 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             
             return $this->hydrateModels($results);
         } catch (PDOException $e) {
-            error_log("Error finding reservations by status: " . $e->getMessage());
+            $this->logDatabaseError("Error finding reservations by status", [
+                'status' => $status,
+                'error' => $e->getMessage()
+            ]);
             return [];
         }
     }
@@ -241,11 +271,11 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
             $stmt = $this->db->prepare("
                 SELECT 
                     COUNT(*) as total_reservations,
-                    SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_reservations,
-                    SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_reservations,
-                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_reservations,
-                    SUM(CASE WHEN status = 'active' THEN total_price ELSE 0 END) as total_spent_active,
-                    SUM(total_price) as total_spent_all
+                    COALESCE(SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END), 0) as active_reservations,
+                    COALESCE(SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END), 0) as cancelled_reservations,
+                    COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) as completed_reservations,
+                    COALESCE(SUM(CASE WHEN status = 'active' THEN total_price ELSE 0 END), 0) as total_spent_active,
+                    COALESCE(SUM(total_price), 0) as total_spent_all
                 FROM {$this->table}
                 WHERE user_id = ?
             ");
@@ -262,7 +292,10 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
                 'total_spent_all' => (float) $result['total_spent_all']
             ];
         } catch (PDOException $e) {
-            error_log("Error getting reservation stats by user ID: " . $e->getMessage());
+            $this->logDatabaseError("Error getting reservation stats by user ID", [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
             return [
                 'total_reservations' => 0,
                 'active_reservations' => 0,
@@ -309,5 +342,67 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
         }
         
         return $models;
+    }
+
+    /**
+     * Busca una reserva por ID incluyendo las relaciones con usuario y alojamiento
+     *
+     * @param int $id
+     * @return Reservation|null
+     */
+    public function findWithRelations(int $id): ?Reservation
+    {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT r.*, 
+                       u.id as user_id, u.name as user_name, u.email as user_email,
+                       a.id as accommodation_id, a.name as accommodation_name, a.location as accommodation_location, a.price as accommodation_price
+                FROM {$this->table} r
+                LEFT JOIN users u ON r.user_id = u.id
+                LEFT JOIN accommodations a ON r.accommodation_id = a.id
+                WHERE r.id = ?
+            ");
+            
+            $stmt->execute([$id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$result) {
+                return null;
+            }
+            
+            // Crear el modelo de reserva
+            $reservation = $this->mapToModel($result);
+            
+            // Crear y asignar el modelo de usuario si existe
+            if ($result['user_id']) {
+                $user = new User();
+                $user->fill([
+                    'id' => $result['user_id'],
+                    'name' => $result['user_name'],
+                    'email' => $result['user_email']
+                ]);
+                $reservation->setUser($user);
+            }
+            
+            // Crear y asignar el modelo de alojamiento si existe
+            if ($result['accommodation_id']) {
+                $accommodation = new Accommodation();
+                $accommodation->fill([
+                    'id' => $result['accommodation_id'],
+                    'name' => $result['accommodation_name'],
+                    'location' => $result['accommodation_location'],
+                    'price' => $result['accommodation_price']
+                ]);
+                $reservation->setAccommodation($accommodation);
+            }
+            
+            return $reservation;
+        } catch (PDOException $e) {
+            $this->logDatabaseError("Error finding reservation with relations", [
+                'reservation_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
     }
 }

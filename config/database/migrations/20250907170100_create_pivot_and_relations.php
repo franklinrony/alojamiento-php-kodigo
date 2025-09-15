@@ -28,13 +28,7 @@ final class CreatePivotAndRelations extends AbstractMigration
             ->addForeignKey('created_by', 'users', 'id', ['delete'=> 'SET_NULL', 'update'=> 'NO_ACTION'])
             ->update();
 
-        // Tabla pivote usuario-alojamiento
-        $this->table('user_accommodations')
-            ->addColumn('user_id', 'integer', ['signed' => false])
-            ->addColumn('accommodation_id', 'integer', ['signed' => false])
-            ->addTimestamps()
-            ->addForeignKey('user_id', 'users', 'id', ['delete'=> 'CASCADE', 'update'=> 'NO_ACTION'])
-            ->addForeignKey('accommodation_id', 'accommodations', 'id', ['delete'=> 'CASCADE', 'update'=> 'NO_ACTION'])
-            ->create();
+        // Tabla pivote usuario-alojamiento eliminada
+        // La relación usuario-alojamiento se maneja a través de reservations
     }
 }
