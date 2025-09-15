@@ -18,9 +18,36 @@ class UserActivityRepository extends BaseRepository implements IUserActivityRepo
      */
     public function find($id)
     {
-        $stmt = $this->db->prepare("SELECT * FROM user_activities WHERE id = :id");
-        $stmt->execute(['id' => $id]);
-        return $stmt->fetch() ? $this->mapToModel($stmt->fetch()) : null;
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM user_activities WHERE id = :id");
+            $stmt->execute(['id' => $id]);
+            $result = $stmt->fetch();
+            
+            if ($result === false || $result === null) {
+                return null;
+            }
+            
+            return $this->mapToModel($result);
+        } catch (\Exception $e) {
+            // Log del error usando el sistema de logging
+            if (class_exists('\App\Services\ILoggerService')) {
+                try {
+                    $container = \App\Utilities\DiContainer::getInstance();
+                    if ($container->has(\App\Services\ILoggerService::class)) {
+                        $logger = $container->get(\App\Services\ILoggerService::class);
+                        $logger->error("Error en UserActivityRepository::find()", [
+                            'error' => $e->getMessage(),
+                            'id' => $id,
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine()
+                        ]);
+                    }
+                } catch (\Exception $logError) {
+                    // Fallback silencioso
+                }
+            }
+            return null;
+        }
     }
 
     /**
@@ -28,26 +55,8 @@ class UserActivityRepository extends BaseRepository implements IUserActivityRepo
      */
     public function all(?int $limit = null, ?int $offset = null)
     {
-        $sql = "SELECT * FROM user_activities";
-        
-        if ($limit !== null) {
-            $sql .= " LIMIT :limit";
-            if ($offset !== null) {
-                $sql .= " OFFSET :offset";
-            }
-        }
-        
-        $stmt = $this->db->prepare($sql);
-        
-        if ($limit !== null) {
-            $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
-            if ($offset !== null) {
-                $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
-            }
-        }
-        
-        $stmt->execute();
-        return array_map([$this, 'mapToModel'], $stmt->fetchAll());
+        // Usar el método padre que ya maneja la lógica correctamente
+        return parent::all($limit, $offset);
     }
 
     /**

@@ -27,6 +27,14 @@ class ReservationRepository extends BaseRepository implements IReservationReposi
     protected $modelClass = Reservation::class;
 
     /**
+     * Constructor
+     */
+    public function __construct(Reservation $model)
+    {
+        parent::__construct($model);
+    }
+
+    /**
      * Busca reservas por usuario
      *
      * @param int $userId

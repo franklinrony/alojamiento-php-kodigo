@@ -12,6 +12,31 @@ class UserPreference extends Model
     protected static $table = 'user_preferences';
 
     /**
+     * @var int
+     */
+    public $user_id;
+
+    /**
+     * @var string
+     */
+    public $notifications;
+
+    /**
+     * @var bool
+     */
+    public $email_updates;
+
+    /**
+     * @var string
+     */
+    public $created_at;
+
+    /**
+     * @var string
+     */
+    public $updated_at;
+
+    /**
      * @return string
      */
     public static function getTableName(): string

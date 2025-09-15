@@ -43,7 +43,7 @@ class RoleRepository extends BaseRepository implements IRoleRepository
     public function getPermissions(int $roleId)
     {
         $sql = "SELECT p.* FROM permissions p
-                INNER JOIN role_permissions rp ON p.id = rp.permission_id
+                INNER JOIN permission_role rp ON p.id = rp.permission_id
                 WHERE rp.role_id = :role_id";
                 
         $stmt = $this->db->prepare($sql);
@@ -70,12 +70,12 @@ class RoleRepository extends BaseRepository implements IRoleRepository
             $this->db->beginTransaction();
 
             // Eliminar permisos existentes
-            $stmt = $this->db->prepare("DELETE FROM role_permissions WHERE role_id = :role_id");
+            $stmt = $this->db->prepare("DELETE FROM permission_role WHERE role_id = :role_id");
             $stmt->execute(['role_id' => $roleId]);
 
             // Insertar nuevos permisos
             $stmt = $this->db->prepare(
-                "INSERT INTO role_permissions (role_id, permission_id) VALUES (:role_id, :permission_id)"
+                "INSERT INTO permission_role (role_id, permission_id) VALUES (:role_id, :permission_id)"
             );
 
             foreach ($permissionIds as $permissionId) {

@@ -207,6 +207,12 @@ abstract class BaseRepository implements IRepository
      */
     protected function getTableName(): string
     {
+        // Fallback al método anterior si está disponible
+        if (method_exists($this->model, 'getTableName')) {
+            return $this->model::getTableName();
+        }
+        
+        // Método por defecto basado en el nombre de la clase
         $modelClass = get_class($this->model);
         $parts = explode('\\', $modelClass);
         $modelName = end($parts);
@@ -218,9 +224,15 @@ abstract class BaseRepository implements IRepository
      *
      * @param array $data
      * @return Model
+     * @throws \InvalidArgumentException Si $data no es un array válido
      */
     protected function mapToModel(array $data): Model
     {
+        // Validar que $data sea un array válido
+        if (!is_array($data) || empty($data)) {
+            throw new \InvalidArgumentException('Los datos deben ser un array no vacío');
+        }
+        
         $modelClass = get_class($this->model);
         $model = new $modelClass();
 

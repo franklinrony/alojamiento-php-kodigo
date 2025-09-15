@@ -12,6 +12,26 @@ class UserActivity extends Model
     protected static $table = 'user_activities';
 
     /**
+     * @var int
+     */
+    public $user_id;
+
+    /**
+     * @var string
+     */
+    public $type;
+
+    /**
+     * @var string|null
+     */
+    public $details;
+
+    /**
+     * @var string
+     */
+    public $created_at;
+
+    /**
      * @return string
      */
     public static function getTableName(): string
@@ -60,7 +80,7 @@ class UserActivity extends Model
      */
     public function getType(): string
     {
-        return $this->type;
+        return $this->type ?? 'unknown';
     }
 
     /**

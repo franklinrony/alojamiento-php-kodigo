@@ -19,27 +19,33 @@ return function (RouteCollector $r) {
     ]);
 
     // Rutas de alojamientos
-    $r->get('/api/accommodations', ['App\Controllers\AccommodationController', 'index']);
+    $r->get('/api/accommodations', ['App\Controllers\Api\AccommodationApiController', 'index']);
     $r->post('/api/accommodations', [
-        'App\Controllers\AccommodationController', 
+        'App\Controllers\Api\AccommodationApiController', 
         'create', 
         'middleware' => ['auth'],
         'permission' => 'create_accommodation'
     ]);
-    $r->get('/api/accommodations/{id:\d+}', ['App\Controllers\AccommodationController', 'show']);
+    $r->get('/api/accommodations/{id:\d+}', ['App\Controllers\Api\AccommodationApiController', 'show']);
     $r->put('/api/accommodations/{id:\d+}', [
-        'App\Controllers\AccommodationController', 
+        'App\Controllers\Api\AccommodationApiController', 
         'update', 
         'middleware' => ['auth'],
         'permission' => 'update_accommodation'
     ]);
     $r->delete('/api/accommodations/{id:\d+}', [
-        'App\Controllers\AccommodationController', 
+        'App\Controllers\Api\AccommodationApiController', 
         'delete', 
         'middleware' => ['auth'],
         'permission' => 'delete_accommodation'
     ]);
 
     // Rutas de reservas
-    $r->get('/api/reservations/availability/{id:\d+}', ['App\Controllers\UserController', 'checkAvailability', 'middleware' => ['auth']]);
+    $r->get('/api/reservations', ['App\Controllers\Api\ReservationApiController', 'index', 'middleware' => ['auth']]);
+    $r->post('/api/reservations', ['App\Controllers\Api\ReservationApiController', 'create', 'middleware' => ['auth']]);
+    $r->get('/api/reservations/{id:\d+}', ['App\Controllers\Api\ReservationApiController', 'show', 'middleware' => ['auth']]);
+    $r->put('/api/reservations/{id:\d+}', ['App\Controllers\Api\ReservationApiController', 'update', 'middleware' => ['auth']]);
+    $r->post('/api/reservations/{id:\d+}/cancel', ['App\Controllers\Api\ReservationApiController', 'cancel', 'middleware' => ['auth']]);
+    $r->get('/api/reservations/availability/{id:\d+}', ['App\Controllers\Api\ReservationApiController', 'checkAvailability']);
+    $r->get('/api/reservations/stats', ['App\Controllers\Api\ReservationApiController', 'stats', 'middleware' => ['auth']]);
 };

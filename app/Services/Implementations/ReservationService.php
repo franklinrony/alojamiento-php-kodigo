@@ -8,6 +8,7 @@ use App\Repositories\IReservationRepository;
 use App\Repositories\IAccommodationRepository;
 use App\Services\IReservationService;
 use App\Services\ILoggerService;
+use App\Services\IUserActivityService;
 use Exception;
 
 /**
@@ -32,20 +33,28 @@ class ReservationService implements IReservationService
     private $logger;
 
     /**
+     * @var IUserActivityService
+     */
+    private $userActivityService;
+
+    /**
      * Constructor
      *
      * @param IReservationRepository $reservationRepository
      * @param IAccommodationRepository $accommodationRepository
      * @param ILoggerService $logger
+     * @param IUserActivityService $userActivityService
      */
     public function __construct(
         IReservationRepository $reservationRepository,
         IAccommodationRepository $accommodationRepository,
-        ILoggerService $logger
+        ILoggerService $logger,
+        IUserActivityService $userActivityService
     ) {
         $this->reservationRepository = $reservationRepository;
         $this->accommodationRepository = $accommodationRepository;
         $this->logger = $logger;
+        $this->userActivityService = $userActivityService;
     }
 
     /**
@@ -170,7 +179,7 @@ class ReservationService implements IReservationService
             $result = $this->reservationRepository->update($reservation->getId(), ['status' => 'cancelled']);
 
             if ($result) {
-                // Log de la actividad
+                // Log de la actividad en el sistema de logging
                 $this->logger->logReservationActivity(
                     $userId, 
                     $reservationId, 
@@ -182,6 +191,14 @@ class ReservationService implements IReservationService
                         'total_price' => $reservation->getTotalPrice()
                     ]
                 );
+
+                // Registrar actividad de usuario
+                $this->userActivityService->logActivity(
+                    $userId,
+                    'reservation_cancelled',
+                    "Reserva cancelada - Alojamiento ID: {$reservation->getAccommodationId()}, Fechas: {$reservation->getCheckInDate()} a {$reservation->getCheckOutDate()}, Total: \${$reservation->getTotalPrice()}"
+                );
+
                 return true;
             }
 

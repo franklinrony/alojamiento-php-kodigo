@@ -119,10 +119,46 @@ class AuthController extends BaseController
             exit;
 
         } catch (\RuntimeException $e) {
+            // Log del error usando el sistema de logging
+            if (class_exists('\App\Services\ILoggerService')) {
+                try {
+                    $container = \App\Utilities\DiContainer::getInstance();
+                    if ($container->has(\App\Services\ILoggerService::class)) {
+                        $logger = $container->get(\App\Services\ILoggerService::class);
+                        $logger->error("Error en registro de usuario", [
+                            'error' => $e->getMessage(),
+                            'email' => $data['email'] ?? 'unknown',
+                            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+                        ]);
+                    }
+                } catch (\Exception $logError) {
+                    // Fallback silencioso
+                }
+            }
+            
             $this->flash('error', $e->getMessage());
             header('Location: /auth/register');
             exit;
         } catch (\Exception $e) {
+            // Log del error usando el sistema de logging
+            if (class_exists('\App\Services\ILoggerService')) {
+                try {
+                    $container = \App\Utilities\DiContainer::getInstance();
+                    if ($container->has(\App\Services\ILoggerService::class)) {
+                        $logger = $container->get(\App\Services\ILoggerService::class);
+                        $logger->error("Error inesperado en registro de usuario", [
+                            'error' => $e->getMessage(),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine(),
+                            'email' => $data['email'] ?? 'unknown',
+                            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+                        ]);
+                    }
+                } catch (\Exception $logError) {
+                    // Fallback silencioso
+                }
+            }
+            
             $this->flash('error', 'Ocurrió un error al procesar tu registro. Por favor, intenta nuevamente.');
             header('Location: /auth/register');
             exit;
