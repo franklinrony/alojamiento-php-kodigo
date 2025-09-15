@@ -1,0 +1,317 @@
+{% extends "layouts/main.twig" %}
+
+{% block styles %}
+<style>
+    /* Hero Section */
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 80px 0;
+        margin-bottom: 0;
+    }
+    
+    .hero-content h1 {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .hero-content .lead {
+        font-size: 1.4rem;
+        margin-bottom: 2rem;
+        opacity: 0.95;
+    }
+    
+    .hero-buttons .btn {
+        margin: 0.5rem;
+        padding: 15px 30px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-radius: 50px;
+        transition: all 0.3s ease;
+    }
+    
+    .hero-buttons .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    
+    /* Features Section */
+    .features-section {
+        padding: 80px 0;
+        background-color: #f8f9fa;
+    }
+    
+    .feature-card {
+        background: white;
+        border-radius: 15px;
+        padding: 40px 30px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        height: 100%;
+        border: none;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+    
+    .feature-icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .feature-card h4 {
+        color: #2c3e50;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    
+    .feature-card p {
+        color: #6c757d;
+        line-height: 1.6;
+    }
+    
+    /* Stats Section */
+    .stats-section {
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        color: white;
+        padding: 60px 0;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .stat-number {
+        font-size: 3rem;
+        font-weight: 700;
+        color: #667eea;
+        display: block;
+    }
+    
+    .stat-label {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin-top: 0.5rem;
+    }
+    
+    /* CTA Section */
+    .cta-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 80px 0;
+        text-align: center;
+    }
+    
+    .cta-section h2 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+    }
+    
+    .cta-section p {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+        opacity: 0.95;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .hero-content h1 {
+            font-size: 2.5rem;
+        }
+        
+        .hero-content .lead {
+            font-size: 1.2rem;
+        }
+        
+        .hero-buttons .btn {
+            display: block;
+            width: 100%;
+            margin: 0.5rem 0;
+        }
+        
+        .cta-section h2 {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <div class="hero-content">
+                    <h1>Encuentra tu Hogar Temporal</h1>
+                    <p class="lead">Descubre alojamientos únicos, seguros y cómodos para cada momento de tu vida. Desde viajes de negocios hasta vacaciones familiares.</p>
+                    <div class="hero-buttons">
+                        {% if not auth.isAuthenticated %}
+                            <a class="btn btn-light btn-lg" href="/auth/register">
+                                <i class="bi bi-person-plus me-2"></i>Regístrate Gratis
+                            </a>
+                            <a class="btn btn-outline-light btn-lg" href="/auth/login">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión
+                            </a>
+                        {% else %}
+                            <a class="btn btn-light btn-lg" href="/accommodations">
+                                <i class="bi bi-search me-2"></i>Explorar Alojamientos
+                            </a>
+                            {% if auth.hasPermission('manage-accommodations') %}
+                                <a class="btn btn-outline-light btn-lg" href="/admin/accommodations/create">
+                                    <i class="bi bi-plus-circle me-2"></i>Publicar Propiedad
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="text-center">
+                    <i class="bi bi-house-heart" style="font-size: 15rem; opacity: 0.3;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col-12">
+                <h2 class="display-5 fw-bold text-dark mb-3">¿Por qué elegir nuestra plataforma?</h2>
+                <p class="lead text-muted">Ofrecemos las mejores herramientas para conectar huéspedes y anfitriones</p>
+            </div>
+        </div>
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <h4>100% Seguro</h4>
+                    <p>Verificamos todas las propiedades y anfitriones para garantizar tu seguridad y tranquilidad durante tu estadía.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-geo-alt"></i>
+                    </div>
+                    <h4>Ubicaciones Perfectas</h4>
+                    <p>Encuentra alojamientos en las mejores ubicaciones, cerca de puntos de interés, transporte público y servicios.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-currency-dollar"></i>
+                    </div>
+                    <h4>Precios Justos</h4>
+                    <p>Ofertas competitivas y transparentes. Sin comisiones ocultas ni sorpresas en el precio final.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-headset"></i>
+                    </div>
+                    <h4>Soporte 24/7</h4>
+                    <p>Nuestro equipo de atención al cliente está disponible las 24 horas para resolver cualquier duda o problema.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-star"></i>
+                    </div>
+                    <h4>Calificaciones Reales</h4>
+                    <p>Lee reseñas auténticas de otros huéspedes para tomar la mejor decisión sobre tu próximo alojamiento.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-lightning"></i>
+                    </div>
+                    <h4>Reserva Instantánea</h4>
+                    <p>Proceso de reserva rápido y sencillo. Confirma tu estadía en minutos con nuestra plataforma intuitiva.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-item">
+                    <span class="stat-number">500+</span>
+                    <div class="stat-label">Propiedades Disponibles</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-item">
+                    <span class="stat-number">10K+</span>
+                    <div class="stat-label">Huéspedes Satisfechos</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-item">
+                    <span class="stat-number">50+</span>
+                    <div class="stat-label">Ciudades</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-item">
+                    <span class="stat-number">4.9</span>
+                    <div class="stat-label">Calificación Promedio</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h2>¿Listo para tu próxima aventura?</h2>
+                <p>Únete a miles de viajeros que ya han encontrado su hogar temporal perfecto con nosotros.</p>
+            {% if not auth.isAuthenticated %}
+                    <a class="btn btn-light btn-lg me-3" href="/auth/register">
+                        <i class="bi bi-person-plus me-2"></i>Comenzar Ahora
+                    </a>
+                    <a class="btn btn-outline-light btn-lg" href="/accommodations">
+                        <i class="bi bi-eye me-2"></i>Ver Propiedades
+                    </a>
+            {% else %}
+                    <a class="btn btn-light btn-lg me-3" href="/accommodations">
+                        <i class="bi bi-search me-2"></i>Buscar Alojamiento
+                    </a>
+                    {% if auth.hasPermission('manage-accommodations') %}
+                        <a class="btn btn-outline-light btn-lg" href="/admin/accommodations/create">
+                            <i class="bi bi-plus-circle me-2"></i>Publicar Propiedad
+                        </a>
+                    {% endif %}
+            {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

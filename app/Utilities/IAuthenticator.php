@@ -1,0 +1,60 @@
+<?php
+
+namespace App\Utilities;
+
+/**
+ * Interface IAuthenticator
+ * Interfaz para el manejo de autenticación
+ */
+interface IAuthenticator
+{
+    /**
+     * Autentica un usuario
+     *
+     * @param string $email
+     * @param string $password
+     * @return bool
+     */
+    public function authenticate(string $email, string $password): bool;
+
+    /**
+     * Obtiene el ID del usuario autenticado
+     *
+     * @return int|null
+     */
+    public function getUserId(): ?int;
+
+    /**
+     * Obtiene el usuario autenticado
+     * 
+     * @return \App\Models\User|null
+     */
+    public function getUser(): ?\App\Models\User;
+
+    /**
+     * Cierra la sesión del usuario
+     */
+    public function logout(): void;
+
+    /**
+     * Verifica si hay un usuario autenticado
+     *
+     * @return bool
+     */
+    public function isAuthenticated(): bool;
+
+    /**
+     * Obtiene los datos del usuario autenticado
+     *
+     * @return array|null
+     */
+    public function getAuthenticatedUser(): ?array;
+
+    /**
+     * Verifica si el usuario autenticado tiene un permiso específico
+     *
+     * @param string $permissionName
+     * @return bool
+     */
+    public function hasPermission(string $permissionName): bool;
+}

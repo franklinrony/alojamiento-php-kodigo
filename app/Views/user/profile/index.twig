@@ -1,0 +1,21 @@
+{% extends "layouts/main.twig" %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Mi Perfil</h1>
+    
+    {% include 'user/profile/_profile_form.twig' %}
+    
+    <hr class="my-4">
+    
+    {% include 'user/profile/_password_form.twig' %}
+    
+    <hr class="my-4">
+    
+    {% include 'user/profile/_preferences.twig' %}
+    
+    <hr class="my-4">
+    
+    {% include 'user/profile/_activity.twig' %}
+</div>
+{% endblock %}

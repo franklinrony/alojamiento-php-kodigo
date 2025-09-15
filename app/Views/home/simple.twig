@@ -1,0 +1,101 @@
+{% extends "layouts/main.twig" %}
+
+{% block content %}
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h1 class="display-4 fw-bold mb-3">Encuentra tu próximo alojamiento</h1>
+                    <p class="lead mb-4">Descubre los mejores lugares para tu estadía</p>
+                    
+                    {% if not user %}
+                        <div class="mt-4">
+                            <a href="/auth/register" class="btn btn-light btn-lg me-3">
+                                <i class="bi bi-person-plus me-2"></i>Registrarse
+                            </a>
+                            <a href="/auth/login" class="btn btn-outline-light btn-lg">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="mt-4">
+                            <a href="#accommodations" class="btn btn-light btn-lg me-3">
+                                <i class="bi bi-house-door me-2"></i>Ver Alojamientos
+                            </a>
+                            {% if user.role and user.role.name == 'admin' %}
+                                <a href="/admin/accommodation/add" class="btn btn-outline-light btn-lg">
+                                    <i class="bi bi-plus-circle me-2"></i>Agregar Alojamiento
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Accommodations Section -->
+    {% if accommodations|length > 0 %}
+    <section id="accommodations" class="py-5">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h2 class="fw-bold mb-3">Alojamientos Disponibles</h2>
+                    <p class="text-muted">Explora nuestra selección de alojamientos</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                {% for accommodation in accommodations %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="accommodation-card">
+                        <div class="accommodation-image">
+                            <i class="bi bi-house-door"></i>
+                        </div>
+                        <div class="accommodation-info">
+                            <h5 class="accommodation-title">{{ accommodation.name }}</h5>
+                            <p class="accommodation-location">
+                                <i class="bi bi-geo-alt me-1"></i>{{ accommodation.location }}
+                            </p>
+                            {% if accommodation.description %}
+                                <p class="text-muted small mb-3">{{ accommodation.description|slice(0, 100) }}{% if accommodation.description|length > 100 %}...{% endif %}</p>
+                            {% endif %}
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="accommodation-price">${{ accommodation.price|number_format(2) }}</span>
+                                <small class="text-muted">por noche</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if accommodations|length == 0 %}
+            <div class="text-center py-5">
+                <i class="bi bi-house-door text-muted" style="font-size: 4rem;"></i>
+                <h4 class="text-muted mt-3">No hay alojamientos disponibles</h4>
+                <p class="text-muted">Vuelve pronto para ver nuevas opciones</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Call to Action -->
+    {% if user and user.role and user.role.name == 'admin' %}
+    <section class="py-5 bg-white">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h3 class="fw-bold mb-3">¿Tienes un alojamiento para ofrecer?</h3>
+                    <p class="text-muted mb-4">Agrega tu alojamiento a nuestra plataforma y llega a más huéspedes</p>
+                    <a href="/admin/accommodation/add" class="btn btn-primary btn-lg">
+                        <i class="bi bi-plus-circle me-2"></i>Agregar Alojamiento
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+{% endblock %}

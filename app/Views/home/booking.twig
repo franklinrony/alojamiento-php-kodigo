@@ -1,0 +1,303 @@
+{% extends "layouts/main.twig" %}
+
+{% block content %}
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h1 class="display-4 fw-bold mb-3">Encuentra tu próxima estancia</h1>
+                    <p class="lead mb-4">Busca ofertas en hoteles, casas y mucho más...</p>
+                    
+                    <!-- Search Bar -->
+                    <div class="search-container">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center bg-white rounded p-2">
+                                    <i class="bi bi-geo-alt text-muted me-2"></i>
+                                    <input type="text" class="search-input" placeholder="¿Adónde vas?">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center bg-white rounded p-2">
+                                    <i class="bi bi-calendar text-muted me-2"></i>
+                                    <span class="text-muted">Fecha de entrada - Fecha de salida</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center bg-white rounded p-2">
+                                    <i class="bi bi-people text-muted me-2"></i>
+                                    <span class="text-muted">2 adultos · 0 niños · 1 habitación</span>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-booking w-100">
+                                    <i class="bi bi-search me-1"></i>Buscar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Us Section -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center mb-5">
+                    <h2 class="section-title">¿Por qué elegir Alojamientos?</h2>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Reserva ahora, paga en el alojamiento</h5>
+                        <p class="text-muted">Cancelación GRATIS en la mayoría de las habitaciones</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <i class="bi bi-star-fill"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Más de 1000 comentarios de la comunidad viajera</h5>
+                        <p class="text-muted">Consigue información fiable de gente que viaja como tú</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <i class="bi bi-globe"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Más de {{ accommodations|length }} alojamientos en El Salvador</h5>
+                        <p class="text-muted">Hoteles, hostales, apartamentos y mucho más...</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <i class="bi bi-headset"></i>
+                        </div>
+                        <h5 class="fw-bold mb-3">Atención al cliente de confianza, 24/7</h5>
+                        <p class="text-muted">Te ayudamos cuando lo necesites</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Accommodations -->
+    {% if featuredAccommodations|length > 0 %}
+    <section class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center mb-5">
+                    <h2 class="section-title">Alojamientos destacados</h2>
+                    <p class="section-subtitle">Descubre los mejores lugares para tu próxima aventura</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                {% for accommodation in featuredAccommodations %}
+                <div class="col-lg-3 col-md-6">
+                    <div class="accommodation-card">
+                        <div class="accommodation-image">
+                            <i class="bi bi-house-door"></i>
+                        </div>
+                        <div class="accommodation-info">
+                            <h5 class="accommodation-title">{{ accommodation.name }}</h5>
+                            <p class="accommodation-location">
+                                <i class="bi bi-geo-alt me-1"></i>{{ accommodation.location }}
+                            </p>
+                            {% if accommodation.description %}
+                                <p class="text-muted small mb-2">{{ accommodation.description|slice(0, 80) }}{% if accommodation.description|length > 80 %}...{% endif %}</p>
+                            {% endif %}
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="accommodation-price">${{ accommodation.price|number_format(2) }}</span>
+                                <div class="rating">
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star"></i>
+                                    <span class="text-muted small ms-1">4.0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Trending Destinations -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center mb-5">
+                    <h2 class="section-title">Destinos de moda</h2>
+                    <p class="section-subtitle">Opciones más populares entre la comunidad viajera de El Salvador</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="destination-card">
+                        <div class="destination-image">
+                            <i class="bi bi-building"></i>
+                        </div>
+                        <div class="destination-info">
+                            <h6 class="destination-name">San Salvador</h6>
+                            <small class="text-muted">El Salvador</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="destination-card">
+                        <div class="destination-image">
+                            <i class="bi bi-church"></i>
+                        </div>
+                        <div class="destination-info">
+                            <h6 class="destination-name">Guatemala</h6>
+                            <small class="text-muted">Guatemala</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="destination-card">
+                        <div class="destination-image">
+                            <i class="bi bi-house"></i>
+                        </div>
+                        <div class="destination-info">
+                            <h6 class="destination-name">Antigua Guatemala</h6>
+                            <small class="text-muted">Guatemala</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="destination-card">
+                        <div class="destination-image">
+                            <i class="bi bi-building"></i>
+                        </div>
+                        <div class="destination-info">
+                            <h6 class="destination-name">Madrid</h6>
+                            <small class="text-muted">España</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="destination-card">
+                        <div class="destination-image">
+                            <i class="bi bi-water"></i>
+                        </div>
+                        <div class="destination-info">
+                            <h6 class="destination-name">La Libertad</h6>
+                            <small class="text-muted">El Salvador</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="destination-card d-flex align-items-center justify-content-center">
+                        <i class="bi bi-arrow-right-circle text-muted" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Weekend Offers -->
+    {% if weekendOffers|length > 0 %}
+    <section class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center mb-5">
+                    <h2 class="section-title">Ofertas para el fin de semana</h2>
+                    <p class="section-subtitle">Ahorra en estancias en estas fechas: 12 de septiembre - 14 de septiembre</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                {% for accommodation in weekendOffers %}
+                <div class="col-lg-3 col-md-6">
+                    <div class="accommodation-card">
+                        <div class="accommodation-image">
+                            <i class="bi bi-house-door"></i>
+                        </div>
+                        <div class="accommodation-info">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="accommodation-title">{{ accommodation.name }}</h5>
+                                <span class="offer-badge">Oferta Escapada</span>
+                            </div>
+                            <p class="accommodation-location">
+                                <i class="bi bi-geo-alt me-1"></i>{{ accommodation.location }}
+                            </p>
+                            <div class="rating mb-2">
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star-fill"></i>
+                                <i class="bi bi-star"></i>
+                                <span class="text-muted small ms-1">4.0</span>
+                                <span class="text-muted small ms-2">({{ (accommodation.id * 25 + 50)|number_format }} comentarios)</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="price-original">2 noches ${{ (accommodation.price * 2.2)|number_format(0) }}</span>
+                                    <div class="price-discount">2 noches ${{ (accommodation.price * 2)|number_format(0) }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Travel More, Spend Less -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h2 class="section-title">Viaja más y gasta menos</h2>
+                    <p class="section-subtitle">Inicia sesión y ahorra</p>
+                    <p class="text-muted">Ahorra un 10% o más en alojamientos participantes. Busca la etiqueta azul de Genius.</p>
+                    {% if not user %}
+                        <div class="mt-4">
+                            <a href="/auth/login" class="btn btn-booking me-3">Inicia sesión</a>
+                            <a href="/auth/register" class="btn btn-booking-outline">Hazte una cuenta</a>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-lg-4 text-center">
+                    <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="bi bi-gift text-white" style="font-size: 2rem;"></i>
+                    </div>
+                    <p class="mt-2 text-muted">Genius</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feel at Home Banner -->
+    <section class="py-5" style="background: linear-gradient(135deg, var(--booking-blue) 0%, var(--booking-light-blue) 100%);">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h2 class="text-white mb-3">¿Quieres sentirte como en casa en tu próxima aventura?</h2>
+                    <a href="#" class="btn btn-light btn-lg">Descubre los alquileres vacacionales</a>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
+                        <i class="bi bi-house-heart text-primary" style="font-size: 3rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

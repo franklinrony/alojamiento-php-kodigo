@@ -1,0 +1,40 @@
+{
+    "name": "auto-commit",
+    "description": "Realiza commits automáticos cuando se detectan cambios importantes",
+    "events": ["afterTask"],
+    "conditions": {
+        "fileChanges": {
+            "minFiles": 1,
+            "patterns": [
+                "app/**/*.php",
+                "config/**/*.php",
+                "public/**/*.php",
+                "composer.json",
+                "composer.lock"
+            ]
+        }
+    },
+    "actions": [
+        {
+            "type": "shell",
+            "command": "git add .",
+            "continueOnError": true
+        },
+        {
+            "type": "shell",
+            "command": "git status --porcelain",
+            "saveOutput": "changes"
+        },
+        {
+            "type": "conditional",
+            "if": "changes.length > 0",
+            "then": [
+                {
+                    "type": "shell",
+                    "command": "git commit -m \"feat(auto): ${taskTitle}\n\n${taskDetails}\"",
+                    "continueOnError": true
+                }
+            ]
+        }
+    ]
+}

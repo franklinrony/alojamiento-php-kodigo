@@ -1,0 +1,187 @@
+{% extends "layouts/admin.twig" %}
+
+{% block title %}Panel de Administración - Alojamientos{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center mb-4">
+                <h1 class="fw-bold mb-3">Panel de Administración</h1>
+                <p class="text-muted">Gestiona tu plataforma de alojamientos</p>
+            </div>
+
+            <!-- Estadísticas Rápidas -->
+            <div class="row g-4 mb-4 justify-content-center">
+                <div class="col-md-4">
+                    <div class="card h-100 border-primary">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-house-door text-primary" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h4 class="text-primary">{{ totalAccommodations }}</h4>
+                            <h6 class="card-title">Total Alojamientos</h6>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card h-100 border-success">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-currency-dollar text-success" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h4 class="text-success">${{ averagePrice|number_format(0) }}</h4>
+                            <h6 class="card-title">Precio Promedio</h6>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card h-100 border-info">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="bi bi-plus-circle text-info" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h6 class="card-title">Agregar Alojamiento</h6>
+                            <a href="/admin/accommodations/create" class="btn btn-info btn-sm">
+                                <i class="bi bi-plus-circle me-1"></i>Nuevo
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alojamientos Disponibles -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-house-door me-2"></i>Alojamientos Disponibles
+                    </h5>
+                    <div>
+                        <a href="/admin/accommodations" class="btn btn-outline-primary btn-sm me-2">
+                            <i class="bi bi-list-ul me-1"></i>Ver Lista Completa
+                        </a>
+                        <a href="/admin/accommodations/create" class="btn btn-success btn-sm">
+                            <i class="bi bi-plus-circle me-1"></i>Agregar
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if accommodations %}
+                        <div class="row">
+                            {% for accommodation in accommodations %}
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card h-100 shadow-sm border-0">
+                                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                                            <i class="bi bi-house display-4 text-muted"></i>
+                                        </div>
+                                        <div class="card-body d-flex flex-column">
+                                            <h6 class="card-title mb-2">{{ accommodation.name }}</h6>
+                                            <p class="card-text text-muted small mb-2">
+                                                <i class="bi bi-geo-alt me-1"></i>
+                                                {{ accommodation.location }}
+                                            </p>
+                                            {% if accommodation.description %}
+                                                <p class="card-text flex-grow-1 small text-muted">
+                                                    {{ accommodation.description|length > 80 ? accommodation.description|slice(0, 80) ~ '...' : accommodation.description }}
+                                                </p>
+                                            {% endif %}
+                                            <div class="mt-auto">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="text-success fw-bold">
+                                                        ${{ accommodation.price|number_format(2) }}
+                                                        <small class="text-muted">/noche</small>
+                                                    </span>
+                                                    <small class="text-muted">
+                                                        ID: {{ accommodation.id }}
+                                                    </small>
+                                                </div>
+                                                <div class="btn-group w-100" role="group">
+                                                    <a href="/accommodations/{{ accommodation.id }}" class="btn btn-outline-primary btn-sm" title="Ver como Usuario">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    <a href="/admin/accommodations/{{ accommodation.id }}/edit" class="btn btn-outline-warning btn-sm" title="Editar">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <a href="/admin/accommodations" class="btn btn-outline-info btn-sm" title="Gestionar">
+                                                        <i class="bi bi-gear"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-house display-1 text-muted"></i>
+                            <h4 class="mt-3">No hay alojamientos disponibles</h4>
+                            <p class="text-muted mb-4">Comienza agregando tu primer alojamiento a la plataforma.</p>
+                            <a href="/admin/accommodations/create" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>Agregar Primer Alojamiento
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Acciones Rápidas -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-lightning me-2"></i>Acciones Rápidas
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3 justify-content-center">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center p-3 bg-light rounded">
+                                        <i class="bi bi-house-door text-primary me-3"></i>
+                                        <div>
+                                            <h6 class="mb-1">Gestionar Alojamientos</h6>
+                                            <p class="text-muted mb-0 small">Ver lista completa con opciones avanzadas</p>
+                                        </div>
+                                        <a href="/admin/accommodations" class="btn btn-sm btn-outline-primary ms-auto">
+                                            Gestionar
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center p-3 bg-light rounded">
+                                        <i class="bi bi-globe text-secondary me-3"></i>
+                                        <div>
+                                            <h6 class="mb-1">Ver Sitio Público</h6>
+                                            <p class="text-muted mb-0 small">Ver cómo ven los usuarios la plataforma</p>
+                                        </div>
+                                        <a href="/" class="btn btn-sm btn-outline-secondary ms-auto">
+                                            Ver Sitio
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center p-3 bg-light rounded">
+                                        <i class="bi bi-plus-circle text-success me-3"></i>
+                                        <div>
+                                            <h6 class="mb-1">Agregar Alojamiento</h6>
+                                            <p class="text-muted mb-0 small">Crear nuevo alojamiento</p>
+                                        </div>
+                                        <a href="/admin/accommodations/create" class="btn btn-sm btn-outline-success ms-auto">
+                                            Crear
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

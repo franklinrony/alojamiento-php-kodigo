@@ -1,0 +1,23 @@
+{% extends "layouts/main.twig" %}
+
+{% block title %}Página no encontrada - Alojamientos{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card">
+                <div class="card-body py-5">
+                    <h1 class="display-1 text-warning">404</h1>
+                    <h2 class="mb-4">Página no encontrada</h2>
+                    <p class="text-muted mb-4">Lo sentimos, la página que buscas no existe o ha sido movida.</p>
+                    <a href="/" class="btn btn-primary">
+                        <i class="bi bi-house-door me-2"></i>
+                        Volver al inicio
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

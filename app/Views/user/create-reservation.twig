@@ -1,0 +1,261 @@
+{% extends "layouts/main.twig" %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">{{ pageTitle }}</h4>
+                </div>
+                <div class="card-body">
+                    {% if accommodation %}
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">{{ accommodation.name }}</h5>
+                        <p class="mb-0">{{ accommodation.location }} - ${{ accommodation.price|number_format(2) }} por noche</p>
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" action="/user/reservations/create" id="reservationForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="accommodation_id" class="form-label">Alojamiento</label>
+                                    <select class="form-select" id="accommodation_id" name="accommodation_id" required>
+                                        <option value="">Selecciona un alojamiento</option>
+                                        {% if allAccommodations is defined and allAccommodations|length > 0 %}
+                                            {% for acc in allAccommodations %}
+                                            <option value="{{ acc.id }}" 
+                                                    {% if accommodation and accommodation.id == acc.id %}selected{% endif %}
+                                                    data-price="{{ acc.price }}"
+                                                    data-location="{{ acc.location }}">
+                                                {{ acc.name }} - {{ acc.location }} - ${{ acc.price|number_format(2) }}
+                                            </option>
+                                            {% endfor %}
+                                        {% else %}
+                                            <option value="" disabled>No hay alojamientos disponibles</option>
+                                        {% endif %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="guests" class="form-label">Número de Huéspedes</label>
+                                    <select class="form-select" id="guests" name="guests" required>
+                                        {% for i in 1..20 %}
+                                        <option value="{{ i }}" {% if i == 1 %}selected{% endif %}>{{ i }} {% if i == 1 %}huésped{% else %}huéspedes{% endif %}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="check_in_date" class="form-label">Fecha de Entrada</label>
+                                    <input type="date" class="form-control" id="check_in_date" name="check_in_date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="check_out_date" class="form-label">Fecha de Salida</label>
+                                    <input type="date" class="form-control" id="check_out_date" name="check_out_date" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="special_requests" class="form-label">Solicitudes Especiales (Opcional)</label>
+                            <textarea class="form-control" id="special_requests" name="special_requests" rows="3" 
+                                      placeholder="Cualquier solicitud especial o comentario..."></textarea>
+                        </div>
+
+                        <!-- Resumen de la reserva -->
+                        <div class="card bg-light mb-3" id="reservationSummary" style="display: none;">
+                            <div class="card-body">
+                                <h5 class="card-title">Resumen de la Reserva</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-1"><strong>Alojamiento:</strong> <span id="summaryAccommodation">-</span></p>
+                                        <p class="mb-1"><strong>Ubicación:</strong> <span id="summaryLocation">-</span></p>
+                                        <p class="mb-1"><strong>Huéspedes:</strong> <span id="summaryGuests">-</span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-1"><strong>Check-in:</strong> <span id="summaryCheckIn">-</span></p>
+                                        <p class="mb-1"><strong>Check-out:</strong> <span id="summaryCheckOut">-</span></p>
+                                        <p class="mb-1"><strong>Noches:</strong> <span id="summaryNights">-</span></p>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="h5 mb-0">Total:</span>
+                                    <span class="h4 text-primary mb-0" id="summaryTotal">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="/user/reservations" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Volver a Reservas
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                                <i class="fas fa-calendar-check"></i> Crear Reserva
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Configurar fecha mínima (hoy)
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('check_in_date').min = today;
+document.getElementById('check_out_date').min = today;
+
+// Cargar alojamientos disponibles
+loadAccommodations();
+
+// Event listeners
+document.getElementById('accommodation_id').addEventListener('change', updateReservationSummary);
+document.getElementById('check_in_date').addEventListener('change', updateReservationSummary);
+document.getElementById('check_out_date').addEventListener('change', updateReservationSummary);
+document.getElementById('guests').addEventListener('change', updateReservationSummary);
+
+// Event listeners para verificar disponibilidad
+document.getElementById('accommodation_id').addEventListener('change', checkAvailability);
+document.getElementById('check_in_date').addEventListener('change', checkAvailability);
+document.getElementById('check_out_date').addEventListener('change', checkAvailability);
+
+function loadAccommodations() {
+    // Los alojamientos ya están cargados desde el servidor
+    const accommodationSelect = document.getElementById('accommodation_id');
+    
+    // Verificar si hay alojamientos disponibles
+    if (accommodationSelect.children.length === 1) {
+        accommodationSelect.innerHTML = '<option value="">No hay alojamientos disponibles</option>';
+    }
+}
+
+function updateReservationSummary() {
+    const accommodationId = document.getElementById('accommodation_id').value;
+    const checkInDate = document.getElementById('check_in_date').value;
+    const checkOutDate = document.getElementById('check_out_date').value;
+    const guests = document.getElementById('guests').value;
+
+    if (!accommodationId || !checkInDate || !checkOutDate) {
+        document.getElementById('reservationSummary').style.display = 'none';
+        document.getElementById('submitBtn').disabled = true;
+        return;
+    }
+
+    // Validar fechas
+    if (new Date(checkOutDate) <= new Date(checkInDate)) {
+        alert('La fecha de salida debe ser posterior a la fecha de entrada');
+        document.getElementById('check_out_date').value = '';
+        return;
+    }
+
+    // Calcular noches
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+
+    // Actualizar resumen
+    document.getElementById('summaryAccommodation').textContent = document.getElementById('accommodation_id').selectedOptions[0].text;
+    document.getElementById('summaryGuests').textContent = guests + ' ' + (guests == 1 ? 'huésped' : 'huéspedes');
+    document.getElementById('summaryCheckIn').textContent = formatDate(checkInDate);
+    document.getElementById('summaryCheckOut').textContent = formatDate(checkOutDate);
+    document.getElementById('summaryNights').textContent = nights + ' ' + (nights == 1 ? 'noche' : 'noches');
+
+    // Obtener precio del alojamiento seleccionado
+    const selectedOption = document.getElementById('accommodation_id').selectedOptions[0];
+    const pricePerNight = parseFloat(selectedOption.dataset.price) || 0;
+    const totalPrice = pricePerNight * nights;
+    document.getElementById('summaryTotal').textContent = '$' + totalPrice.toFixed(2);
+
+    // Mostrar resumen y habilitar botón
+    document.getElementById('reservationSummary').style.display = 'block';
+    document.getElementById('submitBtn').disabled = false;
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+}
+
+function checkAvailability() {
+    const accommodationId = document.getElementById('accommodation_id').value;
+    const checkInDate = document.getElementById('check_in_date').value;
+    const checkOutDate = document.getElementById('check_out_date').value;
+
+    // Solo verificar si todos los campos están completos
+    if (!accommodationId || !checkInDate || !checkOutDate) {
+        hideAvailabilityMessage();
+        return;
+    }
+
+    // Validar fechas
+    if (new Date(checkOutDate) <= new Date(checkInDate)) {
+        hideAvailabilityMessage();
+        return;
+    }
+
+    // Hacer llamada AJAX para verificar disponibilidad
+    fetch(`/api/reservations/availability/${accommodationId}?check_in=${checkInDate}&check_out=${checkOutDate}`)
+        .then(response => response.json())
+        .then(data => {
+            showAvailabilityMessage(data.available, data.message);
+        })
+        .catch(error => {
+            console.error('Error checking availability:', error);
+            hideAvailabilityMessage();
+        });
+}
+
+function showAvailabilityMessage(isAvailable, message) {
+    // Remover mensaje anterior si existe
+    hideAvailabilityMessage();
+
+    const availabilityDiv = document.createElement('div');
+    availabilityDiv.id = 'availability-message';
+    availabilityDiv.className = `alert ${isAvailable ? 'alert-success' : 'alert-warning'}`;
+    availabilityDiv.innerHTML = `
+        <i class="fas ${isAvailable ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+        ${message}
+    `;
+
+    // Insertar después del campo de alojamiento
+    const accommodationField = document.querySelector('.mb-3');
+    accommodationField.parentNode.insertBefore(availabilityDiv, accommodationField.nextSibling);
+}
+
+function hideAvailabilityMessage() {
+    const existingMessage = document.getElementById('availability-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+}
+
+// Validación del formulario
+document.getElementById('reservationForm').addEventListener('submit', function(e) {
+    const checkInDate = document.getElementById('check_in_date').value;
+    const checkOutDate = document.getElementById('check_out_date').value;
+    
+    if (new Date(checkOutDate) <= new Date(checkInDate)) {
+        e.preventDefault();
+        alert('La fecha de salida debe ser posterior a la fecha de entrada');
+        return false;
+    }
+});
+</script>
+{% endblock %}

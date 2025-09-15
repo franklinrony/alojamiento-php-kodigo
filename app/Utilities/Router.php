@@ -1,0 +1,305 @@
+<?php
+
+namespace App\Utilities;
+
+use FastRoute\Dispatcher;
+use FastRoute\RouteCollector;
+use DI\Container;
+use function FastRoute\cachedDispatcher;
+
+/**
+ * Class Router
+ * Manejador de rutas de la aplicación
+ */
+class Router
+{
+    /**
+     * @var Dispatcher
+     */
+    private $dispatcher;
+
+    /**
+     * @var Container
+     */
+    private $container;
+
+    /**
+     * @param Container $container Contenedor de dependencias
+     */
+    public function __construct(Container $container)
+    {
+        $this->container = $container;
+        $this->initializeDispatcher();
+    }
+
+    /**
+     * Inicializa el despachador de rutas con cache
+     */
+    private function initializeDispatcher(): void
+    {
+        // Configurar el archivo de cache para FastRoute
+        $cacheFile = PathHelper::fromRoot('var/cache/fast_route_dispatcher.cache');
+        
+        // Asegurar que el directorio de cache existe
+        $cacheDir = dirname($cacheFile);
+        if (!is_dir($cacheDir)) {
+            mkdir($cacheDir, 0755, true);
+        }
+        
+        // Determinar si el cache está habilitado basado en el entorno
+        $cacheEnabled = $_ENV['APP_DEBUG'] !== 'true' && $_ENV['FASTROUTE_CACHE_ENABLED'] !== 'false';
+        
+        $this->dispatcher = cachedDispatcher(function(RouteCollector $r) {
+            // Cargar rutas web
+            $webRoutes = require PathHelper::fromRoot('config/routes/web.php');
+            $webRoutes($r);
+            
+            // Cargar rutas API
+            $apiRoutes = require PathHelper::fromRoot('config/routes/api.php');
+            $apiRoutes($r);
+        }, [
+            'cacheFile' => $cacheFile,
+            'cacheDisabled' => !$cacheEnabled,
+        ]);
+    }
+
+    /**
+     * Despacha la petición actual
+     */
+    public function dispatch(): void
+    {
+        // Obtener método y URI de la petición actual
+        $httpMethod = $_SERVER['REQUEST_METHOD'];
+        $uri = $this->getUri();
+        
+        // Log de la ruta usando el sistema de logging
+        if ($this->container->has(\App\Services\ILoggerService::class)) {
+            $logger = $this->container->get(\App\Services\ILoggerService::class);
+            $logger->debug("Procesando ruta", [
+                'uri' => $uri,
+                'method' => $httpMethod
+            ]);
+        }
+        
+        // Obtener información de la ruta
+        $routeInfo = $this->dispatcher->dispatch($httpMethod, $uri);
+
+        switch ($routeInfo[0]) {
+            case Dispatcher::NOT_FOUND:
+                http_response_code(404);
+                if ($this->isApiRequest()) {
+                    header('Content-Type: application/json');
+                    echo json_encode(['error' => true, 'message' => 'Ruta no encontrada']);
+                } else {
+                    // Para rutas web, usar ErrorRenderer para configurar variables globales
+                    ErrorRenderer::renderErrorPage($this->container, 'errors/404.twig', [
+                        'pageTitle' => 'Página no encontrada'
+                    ]);
+                }
+                break;
+
+            case Dispatcher::METHOD_NOT_ALLOWED:
+                http_response_code(405);
+                if ($this->isApiRequest()) {
+                    header('Content-Type: application/json');
+                    echo json_encode(['error' => true, 'message' => 'Método no permitido']);
+                } else {
+                    // Para rutas web, usar ErrorRenderer para configurar variables globales
+                    ErrorRenderer::renderErrorPage($this->container, 'errors/405.twig', [
+                        'pageTitle' => 'Método no permitido'
+                    ]);
+                }
+                break;
+
+            case Dispatcher::FOUND:
+                $handler = $routeInfo[1];
+                $vars = $routeInfo[2];
+                
+                if (is_array($handler)) {
+                    // Si el handler es un array, procesar con middleware
+                    $this->handleRouteWithMiddleware($handler, $vars);
+                } else {
+                    // Si es una ruta simple, manejarla directamente
+                    $this->handleFoundRoute($handler, $vars);
+                }
+                break;
+        }
+    }
+
+    /**
+     * Maneja una ruta encontrada
+     *
+     * @param array $handler
+     * @param array $vars
+     */
+    private function handleFoundRoute($handler, array $vars): void
+    {
+        if (is_array($handler)) {
+            [$controllerClass, $method] = $handler;
+
+            // Crear instancia del controlador con sus dependencias
+            $controller = $this->resolveController($controllerClass);
+
+            // Llamar al método del controlador con los parámetros de la ruta
+            $controller->$method(...array_values($vars));
+        } elseif ($handler instanceof \Closure) {
+            // Si es una función closure, ejecutarla con el container
+            $request = $this->container->has('request') ? $this->container->get('request') : null;
+            $response = $this->container->has('response') ? $this->container->get('response') : null;
+            
+            $handler($request, $response, ...array_values($vars));
+        } else {
+            throw new \RuntimeException('Handler inválido para la ruta');
+        }
+    }
+
+    /**
+     * Obtiene la URI limpia de la petición
+     *
+     * @return string
+     */
+    private function getUri(): string
+    {
+        $uri = $_SERVER['REQUEST_URI'];
+        
+        if (false !== $pos = strpos($uri, '?')) {
+            $uri = substr($uri, 0, $pos);
+        }
+        
+        return rawurldecode($uri);
+    }
+
+    /**
+     * Resuelve las dependencias del controlador
+     *
+     * @param string $controllerClass
+     * @return object
+     */
+    private function resolveController(string $controllerClass): object
+    {
+        // PHP-DI maneja automáticamente la resolución de dependencias
+        // No necesitamos verificar si está registrado
+
+        // Resolver el controlador usando el contenedor
+        return $this->container->get($controllerClass);
+    }
+
+    /**
+     * Maneja una ruta con middleware
+     * 
+     * @param array $handler
+     * @param array $vars
+     */
+    private function handleRouteWithMiddleware(array $handler, array $vars): void
+    {
+        [$controllerClass, $method] = $handler;
+        
+        // Instanciar el controlador usando el contenedor
+        $controller = $this->container->get($controllerClass);
+        
+        // Crear el manejador final que ejecutará el método del controlador
+        $finalHandler = function() use ($controller, $method, $vars) {
+            return $controller->$method(...array_values($vars));
+        };
+        
+        // Crear el dispatcher de middlewares
+        $middlewareDispatcher = new \App\Middlewares\MiddlewareDispatcher($finalHandler);
+        
+        // Agregar middleware de CORS por defecto
+        $middlewareDispatcher->addMiddleware($this->container->get(\App\Middlewares\CorsMiddleware::class));
+        
+        // Procesar middlewares
+        if (isset($handler['middleware'])) {
+            foreach ($handler['middleware'] as $middleware) {
+                if ($middleware === 'auth') {
+                    $middlewareDispatcher->addMiddleware($this->container->get(\App\Middlewares\AuthMiddleware::class));
+                } elseif (strpos($middleware, 'permission:') === 0) {
+                    $permission = substr($middleware, 11); // Remover 'permission:'
+                    $permissionMiddleware = new \App\Middlewares\PermissionMiddleware(
+                        $this->container->get(\App\Services\IUserService::class),
+                        $permission
+                    );
+                    $middlewareDispatcher->addMiddleware($permissionMiddleware);
+                }
+            }
+        }
+        
+        // Si hay un permiso específico requerido (formato legacy)
+        if (isset($handler['permission'])) {
+            $permissionMiddleware = new \App\Middlewares\PermissionMiddleware(
+                $this->container->get(\App\Services\IUserService::class),
+                $handler['permission']
+            );
+            $middlewareDispatcher->addMiddleware($permissionMiddleware);
+        }
+        
+        // Ejecutar la cadena de middlewares
+        $middlewareDispatcher->dispatch();
+    }
+
+    /**
+     * Determina si la petición actual es una petición a la API
+     *
+     * @return bool
+     */
+    private function isApiRequest(): bool
+    {
+        $uri = $this->getUri();
+        return strpos($uri, '/api/') === 0 || 
+               strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false;
+    }
+
+    /**
+     * Limpia el cache de FastRoute
+     * Útil para desarrollo cuando se modifican las rutas
+     *
+     * @return bool
+     */
+    public static function clearCache(): bool
+    {
+        $cacheFile = PathHelper::fromRoot('var/cache/fast_route_dispatcher.cache');
+        
+        if (file_exists($cacheFile)) {
+            return unlink($cacheFile);
+        }
+        
+        return true; // No existe el archivo, consideramos que está "limpio"
+    }
+
+    /**
+     * Verifica si el cache de FastRoute existe
+     *
+     * @return bool
+     */
+    public static function cacheExists(): bool
+    {
+        $cacheFile = PathHelper::fromRoot('var/cache/fast_route_dispatcher.cache');
+        return file_exists($cacheFile);
+    }
+
+    /**
+     * Obtiene información sobre el cache de FastRoute
+     *
+     * @return array
+     */
+    public static function getCacheInfo(): array
+    {
+        $cacheFile = PathHelper::fromRoot('var/cache/fast_route_dispatcher.cache');
+        
+        if (!file_exists($cacheFile)) {
+            return [
+                'exists' => false,
+                'size' => 0,
+                'modified' => null,
+                'path' => $cacheFile
+            ];
+        }
+        
+        return [
+            'exists' => true,
+            'size' => filesize($cacheFile),
+            'modified' => date('Y-m-d H:i:s', filemtime($cacheFile)),
+            'path' => $cacheFile
+        ];
+    }
+}
